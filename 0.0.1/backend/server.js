@@ -34,38 +34,48 @@ app.post('/login', (req, res) => {
 });
 
 // ---- TOKEN MANAGEMENT ----
-app.post('/validate', (req, res) => {
+app.post('/token/validate', (req, res) => {
     const { tokenId } = req.body;
     const token = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId);
 
     if (!token) {
-        console.log('FAILED VALIDATION - NOT FOUND: ' + tokenId);
+        console.log('FAILED TOKEN VALIDATION - NOT FOUND: ' + tokenId);
         return res.status(404).json({valid: false, reason: 'Token not found'});
     }
 
     const now = Date.now();
     if (now > token.expiry) {
-        console.log('FAILED VALIDATION - EXPIRED: ' + tokenId);
+        console.log('FAILED TOKEN VALIDATION - EXPIRED: ' + tokenId);
         return res.status(401).json({ valid: false, reason: 'Token expired' });
     }
 
-    console.log('SUCCESSFUL VALIDATION: ' + tokenId);
+    console.log('SUCCESSFUL TOKEN VALIDATION: ' + tokenId);
     return res.json({ valid: true, username: token.username, expiresIn: token.expiry - now });
 });
 
 
-app.post('/delete', (req, res) => {
-    const { tokenId } = req.body;
+app.delete('/token/:tokenId', (req, res) => {
+    const { tokenId } = req.params;
+
+    if (!tokenId) {
+        console.log('FAILED TOKEN DELETION: TokenId required');
+        return res.status(400).json({success: false, error: 'TokenId required'});
+    }
     const token = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId);
 
     if (!token) {
-        console.log('FAILED DELETION: ' + tokenId);
+        console.log('FAILED TOKEN DELETION: Token not found (' + tokenId + ')');
         return res.status(404).json({ success: false, tokenId: tokenId, reason: 'Token not found' });
     }
     db.prepare('DELETE FROM tokens WHERE id = ?').run(tokenId);
-    console.log('SUCCESSFUL DELETION: ' + tokenId);
+    console.log('SUCCESSFUL TOKEN DELETION: ' + tokenId);
     return res.json({ success: true, tokenId: tokenId});
 })
+
+app.get('/tokens', (req, res) => {
+    const tokens = db.prepare('SELECT * FROM tokens').all();
+    res.json(tokens);
+});
 
 
 // ---- USER MANAGEMENT ----
@@ -74,18 +84,20 @@ app.post('/users', (req, res) => {
     const { username } = req.body;
 
     if (!username) {
-        console.log('FAILED REGISTRATION: ' + username);
+        console.log('FAILED USER REGISTRATION: username required');
         return res.status(400).json({success: false, error: 'Username required'});
     }
 
     if (username === 'root') {
-        return res.status(403).json({ error: 'User "root" cannot be modified.' });
+        console.log('FAILED USER REGISTRATION: cannot overwrite root');
+        return res.status(403).json({ error: 'cannot overwrite root' });
     }
 
     const existingUser = db
         .prepare('SELECT username FROM users WHERE username = ?')
         .get(username);
     if (existingUser) {
+        console.log('FAILED USER REGISTRATION: ' + username + 'already exists');
         return res.status(409).json({success: false, error: 'User ' + username + '  already exists'});
     }
 
@@ -93,12 +105,12 @@ app.post('/users', (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/users/delete', (req, res) => {
-    const { username } = req.body;
+app.delete('/users/:username', (req, res) => {
+    const { username } = req.params;
     const existingUser = db.prepare('SELECT username FROM users WHERE username = ?').get(username);
 
     if (!existingUser) {
-        console.log('FAILED DELETION: ' + username);
+        console.log('FAILED USER DELETION: ' + username);
         return res.status(409).json({success: false, error: 'User ' + username + '  does not exist'});
     }
 

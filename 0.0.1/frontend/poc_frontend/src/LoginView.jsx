@@ -26,7 +26,7 @@ function LoginView() {
 
     const handleValidate = async () => {
         try {
-            const res = await axios.post(`${API_BASE}/validate`, { tokenId: validationInput });
+            const res = await axios.post(`${API_BASE}/token/validate`, { tokenId: validationInput });
             setValidationResult(res.data);
         } catch (err) {
             setValidationResult({ valid: false, reason: err.response?.data?.reason || err.message + " - Backend Offline???" });
@@ -62,7 +62,9 @@ function LoginView() {
                     value={usernameInput}
                     onChange={e => setUsernameInput(e.target.value)}
                 />
-                <button onClick={handleLogin}>Login</button>
+                <button
+                    className={"submitButton"}
+                    onClick={handleLogin}>Login</button>
             </div>
 
             <div style={{ marginTop: 20, minHeight: '8rem', visibility: accessToken ? 'visible' : 'hidden'}}>
@@ -71,6 +73,7 @@ function LoginView() {
                         <p className="textarea"><strong>Access Token:</strong> {accessToken}</p>
                         <div style={{ minHeight: '3rem' }}> {/* Platz für den Button */}
                             <button
+                                className={"interactButton"}
                                 onClick={handleCopyToken}
                             >
                                 Copy Token-ID
@@ -87,7 +90,9 @@ function LoginView() {
                     value={validationInput}
                     onChange={e => setValidationInput(e.target.value)}
                 />
-                <button onClick={handleValidate}>Validate</button>
+                <button
+                    className={"interactButton"}
+                    onClick={handleValidate}>Validate</button>
             </div>
 
             <div style={{ marginTop: 20, minHeight: '10rem', visibility: validationResult ? 'visible' : 'hidden' }}>
@@ -107,7 +112,9 @@ function LoginView() {
 
 
             <div style={{ marginTop: 20 }}>
-                <button onClick={handleLogout}>Logout</button>
+                <button
+                    className={"deleteButton"}
+                    onClick={handleLogout}>Logout</button>
             </div>
         </div>
     );

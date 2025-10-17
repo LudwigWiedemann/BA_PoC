@@ -32,6 +32,39 @@
     transition: opacity 0.3s ease;
 }
 
+.deleteButton {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+}
+
+.interactButton {
+    background-color: #3582dc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+}
+
+.submitButton {
+    background-color: rgba(136, 250, 14, 0.58);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

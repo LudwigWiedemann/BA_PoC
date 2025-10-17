@@ -16,7 +16,7 @@ export default function UserManagement() {
     const handleAddUser = async () => {
         try {
             await axios.post(`${API_BASE}/users`, { username: userRegistryInput }); // or username: username
-            loadUsers();
+            await loadUsers();
             toast.success("User " + userRegistryInput + " added successfully.");
             setUserRegistryInput('')
 
@@ -27,14 +27,22 @@ export default function UserManagement() {
 
     const handleDeleteUser = async (uName) => {
         try {
-            await axios.post(`${API_BASE}/users/delete`, { username: uName });
-            loadUsers();
+            await axios.delete(`${API_BASE}/users/${uName}`);
+            await loadUsers();
             toast.success("User " + uName + " deleted successfully.");
 
         } catch (err) {
             toast.error(err.response?.data?.error || err.message + " - Backend Offline???");
         }
     };
+
+    const handleCopyUser = async (username) => {
+        if (username) {
+            await navigator.clipboard.writeText(username);
+            toast.success('Token copied to clipboard');
+        }
+    };
+
 
     useEffect(() => {
         loadUsers();
@@ -49,7 +57,9 @@ export default function UserManagement() {
                 placeholder="Enter new username"
                 onChange={e => setUserRegistryInput(e.target.value)}
             />
-            <button onClick={handleAddUser}>Register</button>
+            <button
+                className={"submitButton"}
+                onClick={handleAddUser}>Register</button>
             <div
                 style={{
                     width: "100%",
@@ -76,7 +86,7 @@ export default function UserManagement() {
                             key={u.username}
                             style={{
                                 borderBottom: "1px solid #eee",
-                                backgroundColor: u.username === "root" ? "#a840dc" : "#3582dc",
+                                backgroundColor: u.username === "root" ? "#616567" : "#99999a",
                                 transition: "background-color 0.2s ease",
                             }}
                         >
@@ -85,17 +95,16 @@ export default function UserManagement() {
                                 {u.createdAt ? new Date(u.createdAt).toLocaleString() : "-"}
                             </td>
                             <td style={{ padding: "0.75rem" }}>
+                                <button
+                                    className={"interactButton"}
+                                    onClick={() => handleCopyUser(u.username)}
+                                >
+                                    Copy
+                                </button>
                                 {u.username !== "root" && (
                                     <button
+                                        className={"deleteButton"}
                                         onClick={() => handleDeleteUser(u.username)}
-                                        style={{
-                                            backgroundColor: "#dc3545",
-                                            color: "white",
-                                            border: "none",
-                                            borderRadius: "6px",
-                                            padding: "0.3rem 0.6rem",
-                                            cursor: "pointer",
-                                        }}
                                     >
                                         Delete
                                     </button>
