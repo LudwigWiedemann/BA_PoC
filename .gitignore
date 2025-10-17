@@ -20,4 +20,4 @@ Thumbs.db
 
 # SQLite DB if used
 *.sqlite
-./0.0.1/backend/data.db
+0.0.1/backend/data.db
