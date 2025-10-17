@@ -9,7 +9,6 @@ app.use(express.json());
 
 const PORT = 4000;
 const TOKEN_TTL_MS = 60 * 1000; // token valid for 1 minute
-const tokenStore = new Map(); // { tokenId: { username, expiry } }
 
 // ---- LOGIN ----
 app.post('/login', (req, res) => {
@@ -34,7 +33,7 @@ app.post('/login', (req, res) => {
     return res.json({ tokenId, username, expiry });
 });
 
-// ---- VALIDATE ----
+// ---- TOKEN MANAGEMENT ----
 app.post('/validate', (req, res) => {
     const { tokenId } = req.body;
     const token = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId);
@@ -55,7 +54,6 @@ app.post('/validate', (req, res) => {
 });
 
 
-// ---- DELETE ----
 app.post('/delete', (req, res) => {
     const { tokenId } = req.body;
     const token = db.prepare('SELECT * FROM tokens WHERE id = ?').get(tokenId);
@@ -68,5 +66,37 @@ app.post('/delete', (req, res) => {
     console.log('SUCCESSFUL DELETION: ' + tokenId);
     return res.json({ success: true, tokenId: tokenId});
 })
+
+
+// ---- USER MANAGEMENT ----
+
+app.post('/users', (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        console.log('FAILED REGISTRATION: ' + username);
+        return res.status(400).json({success: false, error: 'Username required'});
+    }
+
+    if (username === 'root') {
+        return res.status(403).json({ error: 'User "root" cannot be modified.' });
+    }
+
+    const existingUser = db
+        .prepare('SELECT username FROM users WHERE username = ?')
+        .get(username);
+    if (existingUser) {
+        return res.status(409).json({success: false, error: 'User ' + username + '  already exists'});
+    }
+
+    db.prepare('INSERT INTO users (username) VALUES (?)').run(username);
+    res.json({ success: true });
+});
+
+app.get('/users', (req, res) => {
+    const users = db.prepare('SELECT username, createdAt FROM users').all();
+    res.json(users);
+});
+
 
 app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
