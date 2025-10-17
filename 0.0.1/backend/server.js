@@ -93,6 +93,20 @@ app.post('/users', (req, res) => {
     res.json({ success: true });
 });
 
+app.post('/users/delete', (req, res) => {
+    const { username } = req.body;
+    const existingUser = db.prepare('SELECT username FROM users WHERE username = ?').get(username);
+
+    if (!existingUser) {
+        console.log('FAILED DELETION: ' + username);
+        return res.status(409).json({success: false, error: 'User ' + username + '  does not exist'});
+    }
+
+    db.prepare('DELETE FROM users WHERE username = ?').run(username);
+    console.log('SUCCESSFUL DELETION: ' + username);
+    return res.json({ success: true, username: username});
+})
+
 app.get('/users', (req, res) => {
     const users = db.prepare('SELECT username, createdAt FROM users').all();
     res.json(users);

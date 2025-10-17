@@ -15,11 +15,20 @@ export default function UserManagement() {
 
     const handleAddUser = async () => {
         try {
-            const res = await axios.post(`${API_BASE}/users`, { username: userRegistryInput }); // or username: username
-            // TODO UI: display result to the user nicely :)
-            console.log(res);
+            await axios.post(`${API_BASE}/users`, { username: userRegistryInput }); // or username: username
             loadUsers();
             toast.success("User added successfully.");
+
+        } catch (err) {
+            toast.error(err.response?.data?.error || err.message + " - Backend Offline???");
+        }
+    };
+
+    const handleDeleteUser = async (uName) => {
+        try {
+            await axios.post(`${API_BASE}/users/delete`, { username: uName }); // or username: username
+            loadUsers();
+            toast.success("User deleted successfully.");
 
         } catch (err) {
             toast.error(err.response?.data?.error || err.message + " - Backend Offline???");
@@ -39,9 +48,62 @@ export default function UserManagement() {
                 onChange={e => setUserRegistryInput(e.target.value)}
             />
             <button onClick={handleAddUser}>Register</button>
-            <ul>
-                {registeredUsersList.map(u => <li key={u.username}>{u.username}</li>)}
-            </ul>
+            <div
+                style={{
+                    width: "100%",
+                    minWidth: "50rem",
+                    margin: "0 auto",
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                }}
+            >
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ position: "sticky", top: 0, backgroundColor: "#222", color: "white" }}>
+                    <tr>
+                        <th style={{ padding: "0.75rem" }}>Username</th>
+                        <th style={{ padding: "0.75rem" }}>Created At</th>
+                        <th style={{ padding: "0.75rem" }}>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {registeredUsersList.map((u) => (
+                        <tr
+                            key={u.username}
+                            style={{
+                                borderBottom: "1px solid #eee",
+                                backgroundColor: u.username === "root" ? "#a840dc" : "#3582dc",
+                                transition: "background-color 0.2s ease",
+                            }}
+                        >
+                            <td style={{ padding: "0.75rem" }}>{u.username}</td>
+                            <td style={{ padding: "0.75rem" }}>
+                                {u.createdAt ? new Date(u.createdAt).toLocaleString() : "-"}
+                            </td>
+                            <td style={{ padding: "0.75rem" }}>
+                                {u.username !== "root" && (
+                                    <button
+                                        onClick={() => handleDeleteUser(u.username)}
+                                        style={{
+                                            backgroundColor: "#dc3545",
+                                            color: "white",
+                                            border: "none",
+                                            borderRadius: "6px",
+                                            padding: "0.3rem 0.6rem",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
