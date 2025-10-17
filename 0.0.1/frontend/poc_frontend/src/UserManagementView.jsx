@@ -17,7 +17,8 @@ export default function UserManagement() {
         try {
             await axios.post(`${API_BASE}/users`, { username: userRegistryInput }); // or username: username
             loadUsers();
-            toast.success("User added successfully.");
+            toast.success("User " + userRegistryInput + " added successfully.");
+            setUserRegistryInput('')
 
         } catch (err) {
             toast.error(err.response?.data?.error || err.message + " - Backend Offline???");
@@ -26,9 +27,9 @@ export default function UserManagement() {
 
     const handleDeleteUser = async (uName) => {
         try {
-            await axios.post(`${API_BASE}/users/delete`, { username: uName }); // or username: username
+            await axios.post(`${API_BASE}/users/delete`, { username: uName });
             loadUsers();
-            toast.success("User deleted successfully.");
+            toast.success("User " + uName + " deleted successfully.");
 
         } catch (err) {
             toast.error(err.response?.data?.error || err.message + " - Backend Offline???");
@@ -43,6 +44,7 @@ export default function UserManagement() {
         <div>
             <h2>User Management</h2>
             <input
+                className="input"
                 value={userRegistryInput}
                 placeholder="Enter new username"
                 onChange={e => setUserRegistryInput(e.target.value)}

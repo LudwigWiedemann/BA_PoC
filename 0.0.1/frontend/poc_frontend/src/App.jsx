@@ -22,7 +22,7 @@ function App() {
                 zIndex: 1000,
             }}
             >
-                <Link to="/">Login</Link> | <Link to="/users">User Management</Link> | <Link to={"/token"}>Token Management</Link>
+                <Link to="/users">User Management</Link> | <Link to="/">Login</Link> | <Link to={"/token"}>Token Management</Link>
             </nav>
 
             <Routes>
