@@ -5,12 +5,11 @@ import toast from 'react-hot-toast'
 
 const API_BASE = 'http://localhost:4000';
 
-function App() {
+function LoginView() {
     const [usernameInput, setUsernameInput] = useState('root');
     const [accessToken, setAccessToken] = useState('');
     const [validationInput, setValidationInput] = useState('');
     const [validationResult, setValidationResult] = useState(null);
-    const [deletionInput, setDeletionInput] = useState('');
     const [greeting, setGreeting] = useState('');
 
     const handleLogin = async () => {
@@ -41,21 +40,12 @@ function App() {
         }
     };
 
-    const handleDeleteToken = async () => {
-        try {
-            await axios.post(`${API_BASE}/delete`, {tokenId: deletionInput});
-            toast.success('Token deleted: ' + deletionInput);
-        } catch (err) {
-            toast.error(err.response?.data?.reason || err.message + " - Backend Offline???" )
-        }
-    };
 
-    const handleReset = () => {
+    const handleLogout = () => {
         setUsernameInput('root');
         setAccessToken('');
         setValidationInput('');
         setValidationResult(null);
-        setDeletionInput('');
         setGreeting('');
     };
 
@@ -113,22 +103,14 @@ function App() {
                 )}
             </div>
 
-            <div>
-                <input
-                    className="input"
-                    placeholder="Paste token"
-                    value={deletionInput}
-                    onChange={e => setDeletionInput(e.target.value)}
-                />
-                <button onClick={handleDeleteToken}>Delete token</button>
-            </div>
+
 
 
             <div style={{ marginTop: 20 }}>
-                <button onClick={handleReset}>Reset</button>
+                <button onClick={handleLogout}>Logout</button>
             </div>
         </div>
     );
 }
 
-export default App;
+export default LoginView;
