@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
 const API_BASE = 'http://3.122.55.15:4000';
 
 export default function UserManagement() {
+    const socket = io('http://'+API_BASE+'}:4000');
+
     const [userRegistryInput, setUserRegistryInput] = useState('');
     const [registeredUsersList, setRegisteredUsersList] = useState([]);
 
@@ -46,6 +49,15 @@ export default function UserManagement() {
 
     useEffect(() => {
         loadUsers();
+    }, []);
+
+
+    useEffect(() => {
+        socket.on("users-updated", () => {
+            loadUsers(); // automatisch reloaden
+        });
+
+        return () => socket.off("tokens-updated");
     }, []);
 
     return (

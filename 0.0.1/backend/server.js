@@ -2,10 +2,20 @@ import express from 'express';
 import cors from 'cors';
 import db from './db.js';
 import { v4 as uuidv4 } from 'uuid';
+import { Server } from "socket.io";
+import http from "http";
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+io.on("connection", (socket) => {
+    console.log("Client connected:", socket.id);
+});
 
 const PORT = 4000;
 const TOKEN_TTL_MS = 60 * 1000; // token valid for 1 minute
@@ -29,7 +39,7 @@ app.post('/login', (req, res) => {
     db.prepare('INSERT INTO tokens (id, username, expiry) VALUES (?, ?, ?)').run(tokenId, username, expiry);
     // tokenStore.set(tokenId, { username, expiry });
     console.log('SUCCESSFUL LOGIN: ' + username + ", " + tokenId);
-
+    io.emit("tokens-updated");
     return res.json({ tokenId, username, expiry });
 });
 
@@ -69,6 +79,7 @@ app.delete('/token/:tokenId', (req, res) => {
     }
     db.prepare('DELETE FROM tokens WHERE id = ?').run(tokenId);
     console.log('SUCCESSFUL TOKEN DELETION: ' + tokenId);
+    io.emit("tokens-updated");
     return res.json({ success: true, tokenId: tokenId});
 })
 
@@ -102,6 +113,8 @@ app.post('/users', (req, res) => {
     }
 
     db.prepare('INSERT INTO users (username) VALUES (?)').run(username);
+    console.log('SUCCESSFUL USER REGISTRATION: ' + username);
+    io.emit("users-updated");
     res.json({ success: true });
 });
 
@@ -116,6 +129,7 @@ app.delete('/users/:username', (req, res) => {
 
     db.prepare('DELETE FROM users WHERE username = ?').run(username);
     console.log('SUCCESSFUL DELETION: ' + username);
+    io.emit("users-updated");
     return res.json({ success: true, username: username});
 })
 

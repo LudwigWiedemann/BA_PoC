@@ -2,10 +2,14 @@ import {useEffect, useState} from 'react';
 import axios from 'axios';
 import './App.css';
 import toast from 'react-hot-toast'
+import { io } from "socket.io-client";
 
 const API_BASE = 'http://3.122.55.15:4000';
 
+
 export default function TokenManagement() {
+
+    const socket = io('http://'+API_BASE+'}:4000');
 
     const [deletionInput, setDeletionInput] = useState('');
     const [registeredTokensList, setRegisteredTokensList] = useState([]);
@@ -55,9 +59,18 @@ export default function TokenManagement() {
     }, []);
 
     useEffect(() => {
+        socket.on("tokens-updated", () => {
+            loadTokens(); // automatisch reloaden
+        });
+
+        return () => socket.off("tokens-updated");
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(() => setTimeNow(Date.now()), 1000);
         return () => clearInterval(interval);
     }, []);
+
 
     return (
         <div>
