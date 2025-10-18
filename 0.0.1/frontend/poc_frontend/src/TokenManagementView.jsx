@@ -2,14 +2,13 @@ import {useEffect, useState} from 'react';
 import axios from 'axios';
 import './App.css';
 import toast from 'react-hot-toast'
-import { io } from "socket.io-client";
+import { socket } from "./socket";
 
-const API_BASE = 'http://3.122.55.15:4000';
+// const API_BASE = 'http://3.122.55.15:4000';
+const API_BASE = 'http://localhost:4000';
 
 
 export default function TokenManagement() {
-
-    const socket = io('http://'+API_BASE+'}:4000');
 
     const [deletionInput, setDeletionInput] = useState('');
     const [registeredTokensList, setRegisteredTokensList] = useState([]);

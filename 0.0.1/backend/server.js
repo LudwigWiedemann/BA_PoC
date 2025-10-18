@@ -11,7 +11,9 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors:
+        { origin: "*"}
+    });
 
 io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
@@ -139,4 +141,4 @@ app.get('/users', (req, res) => {
 });
 
 
-app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));

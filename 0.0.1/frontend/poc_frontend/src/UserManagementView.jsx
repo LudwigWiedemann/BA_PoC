@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from "react-hot-toast";
-import { io } from "socket.io-client";
+import { socket } from "./socket";
 
 const API_BASE = 'http://3.122.55.15:4000';
 
 export default function UserManagement() {
-    const socket = io('http://'+API_BASE+'}:4000');
-
     const [userRegistryInput, setUserRegistryInput] = useState('');
     const [registeredUsersList, setRegisteredUsersList] = useState([]);
 
