@@ -3,9 +3,9 @@ import axios from 'axios';
 import './App.css';
 import toast from 'react-hot-toast'
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = 'http://3.122.55.15:4000';
 
-function LoginView() {
+export default function LoginView() {
     const [usernameInput, setUsernameInput] = useState('root');
     const [accessToken, setAccessToken] = useState('');
     const [validationInput, setValidationInput] = useState('');
@@ -119,5 +119,3 @@ function LoginView() {
         </div>
     );
 }
-
-export default LoginView;

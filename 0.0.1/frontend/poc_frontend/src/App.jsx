@@ -4,7 +4,7 @@ import TokenManagement from "./TokenManagementView";
 import UserManagement from './UserManagementView';
 import {Toaster} from "react-hot-toast";
 
-function App() {
+export default function App() {
     return (
         <Router>
             <Toaster position="top-right" reverseOrder={false} />
@@ -34,4 +34,3 @@ function App() {
     );
 }
 
-export default App;

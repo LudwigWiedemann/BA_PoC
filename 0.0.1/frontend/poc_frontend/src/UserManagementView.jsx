@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from "react-hot-toast";
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = 'http://3.122.55.15:4000';
 
 export default function UserManagement() {
     const [userRegistryInput, setUserRegistryInput] = useState('');
