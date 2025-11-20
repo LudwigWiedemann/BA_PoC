@@ -36,5 +36,5 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Sync build output to S3
-        run: |
-          aws s3 sync ./frontend/dist s3://${{ secrets.S3_BUCKET }} --delete
+        working-directory: ./0.0.1/frontend/poc_frontend
+        run: aws s3 sync dist s3://${{ secrets.S3_BUCKET }} --delete
