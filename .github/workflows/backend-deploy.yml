@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - '0.0.1/backend/**'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
