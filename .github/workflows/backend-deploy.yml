@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - '0.0.1/backend/**'
   workflow_dispatch:
 
 jobs:
@@ -28,9 +26,8 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build backend Docker image
-      run: |
-        cd 0.0.1/backend
-        docker build -t backend .
+      working-directory: ./0.0.1/backend
+      run: docker build -t backend .
 
     - name: Tag and push image to ECR
       run: |
