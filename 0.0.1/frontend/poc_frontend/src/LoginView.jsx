@@ -3,7 +3,8 @@ import axios from 'axios';
 import './App.css';
 import toast from 'react-hot-toast'
 
-const API_BASE = 'http://3.122.55.15:4000';
+// const API_BASE = 'http://18.192.38.120:4000';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function LoginView() {
     const [usernameInput, setUsernameInput] = useState('root');
