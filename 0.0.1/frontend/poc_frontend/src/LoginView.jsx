@@ -14,6 +14,7 @@ export default function LoginView() {
     const [greeting, setGreeting] = useState('');
 
     const handleLogin = async () => {
+        console.log(API_BASE)
         try {
             const res = await axios.post(`${API_BASE}/login`, { username: usernameInput });
             setAccessToken(res.data.tokenId);
