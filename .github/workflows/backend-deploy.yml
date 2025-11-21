@@ -37,7 +37,7 @@ jobs:
         run: |
           echo ${AWS_ACCOUNT_ID}
           echo ${AWS_REGION}
-          ECR_URL=065875800629.dkr.ecr.eu-central-1.amazonaws.com/idp-backend
+          ECR_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}
           echo "Using ECR URL: $ECR_URL"
           docker tag backend:latest $ECR_URL:latest
           docker push $ECR_URL:latest
