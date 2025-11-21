@@ -34,10 +34,8 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+          AWS_ECR_URL: ${{ secrets.AWS_ECR_URL}}
         run: |
-          echo ${AWS_ACCOUNT_ID}
-          echo ${AWS_REGION}
-          ECR_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}
-          echo "Using ECR URL: $ECR_URL"
-          docker tag backend:latest $ECR_URL:latest
-          docker push $ECR_URL:latest
+          echo "Using ECR URL: $AWS_ECR_URL"
+          docker tag backend:latest $AWS_ECR_URL:latest
+          docker push $AWS_ECR_URL:latest
