@@ -1,6 +1,30 @@
 // db.js
 import Database from 'better-sqlite3';
-const db = new Database('data.db');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// __dirname für ES Modules bauen
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Datenverzeichnis relativ zu dieser Datei: ./data
+const dataDir = path.join(__dirname, 'data');
+
+
+// Ordner anlegen, falls er nicht existiert
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Pfad zur SQLite-Datei
+const dbPath = path.join(dataDir, 'data.db');
+console.log('📦 Using SQLite DB at:', dbPath);
+
+
+// DB öffnen
+const db = new Database(dbPath);
+
 
 // Initiales Setup
 db.prepare(`
