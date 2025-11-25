@@ -37,12 +37,16 @@ jobs:
           docker tag backend:latest $AWS_ECR_URL:latest
           docker push $AWS_ECR_URL:latest
 
-      - name: Deploy on EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            chmod +x ~/deploy-backend.sh
-            ~/deploy-backend.sh
+          version: 'v1.30.0'
+
+      - name: Configure kubeconfig for EKS
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+
+      - name: Deploy manifests to EKS
+        run: |
+          kubectl apply -f infra/k8s/namespace.yaml
+          kubectl apply -f infra/k8s/deployment.yaml
+          kubectl apply -f infra/k8s/service.yaml

@@ -23,3 +23,13 @@ Thumbs.db
 data.db
 backend/data.db
 0.0.1/backend/data.db
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+
+# Lock file auch ignorieren (optional)
+.terraform.lock.hcl
