@@ -53,7 +53,7 @@ export default function LoginView() {
 
     return (
         <div style={{ maxWidth: 400, margin: '5rem auto', textAlign: 'center' }}>
-            <h1>IdP PoC a1904dbb28bbc4423b1323c7ddb8d85b-322293935.eu-central-1.elb.amazonaws.com</h1>
+            <h1>IdP PoC</h1>
             <h2 style={{ minHeight: '5rem', visibility: greeting ? 'visible' : 'hidden' }}>
                 {greeting}
             </h2>
