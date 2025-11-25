@@ -43,6 +43,10 @@ jobs:
           version: 'v1.30.0'
 
       - name: Configure kubeconfig for EKS
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+          K8S_NAMESPACE: ${{ secrets.K8S_NAMESPACE }}
         run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
       - name: Deploy manifests to EKS
