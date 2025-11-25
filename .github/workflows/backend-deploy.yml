@@ -37,6 +37,14 @@ jobs:
           docker tag backend:latest $AWS_ECR_URL:latest
           docker push $AWS_ECR_URL:latest
 
+      - name: Configure AWS credentials (ludwig-cli for EKS)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_LUDWIG }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_LUDWIG }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
