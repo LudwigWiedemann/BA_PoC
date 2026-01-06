@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: app-service
-  namespace: app-baseline
+  namespace: aws-idp-baseline
 spec:
   type: LoadBalancer
   selector:
-    app: bachelor-app
+    app: idp-app
   ports:
     - port: 80          # Port, über den von außen zugegriffen wird
       targetPort: 4000  # Port im Container (anpassen, falls anders)

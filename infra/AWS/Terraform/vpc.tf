@@ -2,7 +2,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"
 
-  name = "bachelor-eks-vpc"
+  name = "aws-eks-vpc"
   cidr = "10.0.0.0/16"
 
   azs             = ["eu-central-1a", "eu-central-1b"]
@@ -21,6 +21,6 @@ module "vpc" {
   }
 
   tags = {
-    Project = "bachelor-thesis"
+    Project = "aws-baseline"
   }
 }

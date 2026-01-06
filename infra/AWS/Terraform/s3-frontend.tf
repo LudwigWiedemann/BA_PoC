@@ -1,9 +1,9 @@
 resource "aws_s3_bucket" "frontend" {
-  bucket        = "idp-frontend-ludwig-2025-eu-central-1"
+  bucket        = "aws-baseline-bachelor-frontend-eu-central-1"
   force_destroy = true # löscht auch Dateien beim terraform destroy (für PoC praktisch)
 
   tags = {
-    Project = "bachelor-thesis"
+    Project = "aws-baseline"
     App     = "frontend"
   }
 }

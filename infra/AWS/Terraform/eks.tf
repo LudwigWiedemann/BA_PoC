@@ -2,7 +2,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "bachelor-eks"
+  cluster_name    = "aws-managed-kubernetes"
   cluster_version = "1.30"
 
   vpc_id     = module.vpc.vpc_id
@@ -26,6 +26,6 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   tags = {
-    Project = "bachelor-thesis"
+    Project = "aws-baseline"
   }
 }
