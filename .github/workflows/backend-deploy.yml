@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master      # oder main, falls dein Branch so heißt
-  workflow_dispatch:
+  # workflow_dispatch:
 
 jobs:
   build-and-push:
