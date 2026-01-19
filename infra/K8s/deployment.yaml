@@ -20,6 +20,11 @@ spec:
           ports:
             - containerPort: 4000   # anpassen, falls deine App einen anderen Port nutzt
           env:
-            # Beispiel: falls du ENV Variablen brauchst
-            - name: NODE_ENV
-              value: "production"
+            - name: DB_HOST
+              value: cockroachdb.idp.svc.cluster.local
+            - name: DB_NAME
+              value: "idp"   # <--- hier setzen!
+            - name: DB_USER
+              value: "root"
+            - name: DB_PORT
+              value: "26257"

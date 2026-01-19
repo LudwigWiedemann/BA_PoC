@@ -1,55 +1,42 @@
 // db.js
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// __dirname für ES Modules bauen
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Datenverzeichnis relativ zu dieser Datei: ./data
-const dataDir = path.join(__dirname, 'data');
+import pkg from 'pg';
+const { Pool } = pkg;
 
 
-// Ordner anlegen, falls er nicht existiert
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
 
-// Pfad zur SQLite-Datei
-const dbPath = path.join(dataDir, 'data.db');
-console.log('📦 Using SQLite DB at:', dbPath);
+const pool = new Pool({
+    user: 'root',
+    host: process.env.DB_HOST || 'cockroachdb.idp.svc.cluster.local',
+    database: process.env.DB_NAME || 'idp',
+    port: 26257,
+    ssl: false,
+});
 
+// Datenbank anlegen
+await pool.query(`CREATE DATABASE IF NOT EXISTS idp`);
 
-// DB öffnen
-const db = new Database(dbPath);
-
-
-// Initiales Setup
-db.prepare(`
+await pool.query(`
   CREATE TABLE IF NOT EXISTS users (
-    username TEXT PRIMARY KEY,
-    createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    username STRING PRIMARY KEY,
+    createdAt TIMESTAMPTZ DEFAULT now()
   )
-`).run();
+`);
 
-db.prepare(`
+await pool.query(`
   CREATE TABLE IF NOT EXISTS tokens (
-    id TEXT PRIMARY KEY,
-    username TEXT,
-    expiry INTEGER,
-    createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    id STRING PRIMARY KEY,
+    username STRING REFERENCES users(username),
+    expiry BIGINT,
+    createdAt TIMESTAMPTZ DEFAULT now()
   )
-`).run();
+`);
 
-const existingRoot = db.prepare('SELECT username FROM users WHERE username = ?').get('root');
-
-if (!existingRoot) {
-    db.prepare('INSERT INTO users (username) VALUES (?)').run('root');
+const { rows } = await pool.query('SELECT username FROM users WHERE username = $1', ['root']);
+if (rows.length === 0) {
+    await pool.query('INSERT INTO users(username) VALUES($1)', ['root']);
     console.log('✅ Default user "root" created.');
 } else {
     console.log('ℹ️ Default user "root" already exists.');
 }
 
-export default db;
+export default pool;
