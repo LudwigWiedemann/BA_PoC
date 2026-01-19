@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-service
-  namespace: aws-idp-baseline
+  name: idp-service
+  namespace: idp
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: idp-app
+    app: idp
   ports:
     - port: 80          # Port, über den von außen zugegriffen wird
       targetPort: 4000  # Port im Container (anpassen, falls anders)

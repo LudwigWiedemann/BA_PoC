@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-deployment
-  namespace: aws-idp-baseline
+  name: idp-backend
+  namespace: idp
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: idp-app
+      app: idp
   template:
     metadata:
       labels:
-        app: idp-app
+        app: idp
     spec:
       containers:
-        - name: idp-app
+        - name: idp
           image: 065875800629.dkr.ecr.eu-central-1.amazonaws.com/idp-backend:latest
           imagePullPolicy: Always
           ports:
