@@ -43,16 +43,26 @@ jobs:
     # kubectl (Connect to EKS)
     # ----------------------------------------
 
-    - name: Install kubectl
-      uses: azure/setup-kubectl@v4
-      with:
-        version: v1.30.0
-
-    - name: Configure kubeconfig
+    - name: Get EKS API endpoint dynamically
+      id: eks-endpoint
       run: |
-        aws eks update-kubeconfig \
+        ENDPOINT=$(aws eks describe-cluster \
           --name $EKS_CLUSTER_NAME \
-          --region $AWS_REGION
+          --region $AWS_REGION \
+          --query "cluster.endpoint" \
+          --output text)
+        echo "EKS_API_ENDPOINT=$ENDPOINT" >> $GITHUB_ENV
+
+        - name: Install kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: v1.30.0
+
+        - name: Configure kubeconfig
+          run: |
+            aws eks update-kubeconfig \
+              --name $EKS_CLUSTER_NAME \
+              --region $AWS_REGION
 
     # ----------------------------------------
     # Deploy Backend (ORDERED)
