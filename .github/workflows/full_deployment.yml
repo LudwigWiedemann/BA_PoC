@@ -48,6 +48,14 @@ jobs:
       with:
         version: v1.30.0
 
+    - name: Get EKS cluster name
+      run: |
+        CLUSTER_NAME=$(aws eks list-clusters \
+          --region "$AWS_REGION" \
+          --query "clusters[0]" \
+          --output text)
+        echo "EKS_CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
+
     - name: Configure kubeconfig
       run: |
         aws eks update-kubeconfig \
