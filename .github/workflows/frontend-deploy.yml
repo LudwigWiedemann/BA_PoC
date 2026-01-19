@@ -1,10 +1,7 @@
 name: Frontend Build & Deploy to S3
 
 on:
-  push:
-    branches:
-      - master    # oder master, falls dein Hauptbranch so heißt
-  # workflow_dispatch:
+  workflow_dispatch:
   
 jobs:
   build-and-deploy:
