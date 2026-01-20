@@ -86,8 +86,8 @@ jobs:
             -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
           if [ -n "$HOST" ]; then
-            echo "API_BASE=https://$HOST" >> $GITHUB_ENV
-            echo "Resolved API_BASE=https://$HOST"
+            echo "API_BASE=http://$HOST" >> $GITHUB_ENV
+            echo "Resolved API_BASE=http://$HOST"
             exit 0
           fi
 
