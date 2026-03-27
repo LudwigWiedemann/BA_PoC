@@ -1,5 +1,9 @@
 name: Full Multi-Cloud Deploy
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
