@@ -1,5 +1,9 @@
 name: Full Multi-Cloud Deploy
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -12,8 +16,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/GCP/terraform/**'
-      - 'infra/AWS/terraform/**'
+      - 'infra/GCP/Terraform/**'
+      - 'infra/AWS/Terraform/**'
 
 jobs:
   # ─────────────────────────────────────────
@@ -40,7 +44,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init & Apply (GCP)
-        working-directory: infra/GCP/terraform
+        working-directory: infra/GCP/Terraform
         run: |
           terraform init
           terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
@@ -49,7 +53,7 @@ jobs:
 
       - id: tf-outputs
         name: Get Terraform Outputs
-        working-directory: infra/GCP/terraform
+        working-directory: infra/GCP/Terraform
         run: |
           echo "cluster_name=$(terraform output -raw gke_cluster_name)" >> $GITHUB_OUTPUT
           echo "cluster_location=$(terraform output -raw gke_cluster_location)" >> $GITHUB_OUTPUT
@@ -79,7 +83,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init & Apply (AWS)
-        working-directory: infra/AWS/terraform
+        working-directory: infra/AWS/Terraform
         run: |
           terraform init
           terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
@@ -87,7 +91,7 @@ jobs:
 
       - id: tf-outputs
         name: Get Terraform Outputs
-        working-directory: infra/AWS/terraform
+        working-directory: infra/AWS/Terraform
         run: |
           echo "cluster_name=$(terraform output -raw eks_cluster_name)" >> $GITHUB_OUTPUT
           echo "s3_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
