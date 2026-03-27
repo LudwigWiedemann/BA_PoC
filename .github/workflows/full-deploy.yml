@@ -1,0 +1,223 @@
+name: Full Multi-Cloud Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'apply'
+        type: choice
+        options: [apply, destroy]
+  push:
+    branches: [main]
+    paths:
+      - 'infra/GCP/terraform/**'
+      - 'infra/AWS/terraform/**'
+
+jobs:
+  # ─────────────────────────────────────────
+  # TERRAFORM GCP
+  # ─────────────────────────────────────────
+  terraform-gcp:
+    name: Terraform GCP
+    runs-on: ubuntu-latest
+    outputs:
+      cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
+      cluster_location: ${{ steps.tf-outputs.outputs.cluster_location }}
+      gcs_bucket: ${{ steps.tf-outputs.outputs.gcs_bucket }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GCP Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init & Apply (GCP)
+        working-directory: infra/GCP/terraform
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ secrets.GCP_REGION }}"
+
+      - id: tf-outputs
+        name: Get Terraform Outputs
+        working-directory: infra/GCP/terraform
+        run: |
+          echo "cluster_name=$(terraform output -raw gke_cluster_name)" >> $GITHUB_OUTPUT
+          echo "cluster_location=$(terraform output -raw gke_cluster_location)" >> $GITHUB_OUTPUT
+          echo "gcs_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────
+  # TERRAFORM AWS
+  # ─────────────────────────────────────────
+  terraform-aws:
+    name: Terraform AWS
+    runs-on: ubuntu-latest
+    outputs:
+      cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
+      s3_bucket: ${{ steps.tf-outputs.outputs.s3_bucket }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS Auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init & Apply (AWS)
+        working-directory: infra/AWS/terraform
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
+            -var="region=${{ secrets.AWS_REGION }}"
+
+      - id: tf-outputs
+        name: Get Terraform Outputs
+        working-directory: infra/AWS/terraform
+        run: |
+          echo "cluster_name=$(terraform output -raw eks_cluster_name)" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────
+  # DEPLOY GCP (K8s + Frontend)
+  # ─────────────────────────────────────────
+  deploy-gcp:
+    name: Deploy → GKE + GCS
+    needs: terraform-gcp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GCP Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ needs.terraform-gcp.outputs.cluster_name }}
+          location: ${{ needs.terraform-gcp.outputs.cluster_location }}
+
+      - name: Build & Push Image → Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
+          docker build -t $IMAGE ./0.0.1/backend
+          docker push $IMAGE
+          echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
+
+      - name: Deploy K8s Manifests
+        run: |
+          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
+          kubectl apply -f infra/K8s/namespace.yaml
+          kubectl apply -f infra/K8s/deployment.yaml
+          kubectl apply -f infra/K8s/service.yaml
+          kubectl apply -f infra/K8s/ingress.yaml
+          kubectl apply -f infra/K8s/db.yaml
+          kubectl rollout status deployment/backend --timeout=120s
+
+      - name: Get Ingress IP (GCP)
+        id: get-ip
+        run: |
+          for i in {1..18}; do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
+              -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              echo "api_url=http://$IP" >> $GITHUB_OUTPUT
+              echo "GCP Ingress IP: $IP"
+              break
+            fi
+            echo "Warte auf Ingress IP... ($i/18)"
+            sleep 10
+          done
+
+      - name: Build & Deploy Frontend → GCS
+        run: |
+          cd 0.0.1/frontend
+          npm ci
+          VITE_API_BASE=${{ steps.get-ip.outputs.api_url }} npm run build
+          gsutil -m rsync -r -d dist/ gs://${{ needs.terraform-gcp.outputs.gcs_bucket }}/
+          gsutil setmeta -h "Cache-Control:no-cache, no-store" \
+            gs://${{ needs.terraform-gcp.outputs.gcs_bucket }}/index.html
+
+  # ─────────────────────────────────────────
+  # DEPLOY AWS (K8s + Frontend)
+  # ─────────────────────────────────────────
+  deploy-aws:
+    name: Deploy → EKS + S3
+    needs: terraform-aws
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS Auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get EKS Credentials
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ needs.terraform-aws.outputs.cluster_name }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Build & Push Image → ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+          IMAGE="${{ secrets.AWS_ECR_URL }}/backend:${{ github.sha }}"
+          docker build -t $IMAGE ./0.0.1/backend
+          docker push $IMAGE
+          echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
+
+      - name: Deploy K8s Manifests
+        run: |
+          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
+          kubectl apply -f infra/K8s/namespace.yaml
+          kubectl apply -f infra/K8s/deployment.yaml
+          kubectl apply -f infra/K8s/service.yaml
+          kubectl apply -f infra/K8s/ingress.yaml
+          kubectl apply -f infra/K8s/db.yaml
+          kubectl rollout status deployment/backend --timeout=120s
+
+      - name: Get Ingress Hostname (AWS)
+        id: get-hostname
+        run: |
+          for i in {1..18}; do
+            HOSTNAME=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+            if [ -n "$HOSTNAME" ]; then
+              echo "API_URL=http://$HOSTNAME" >> $GITHUB_ENV
+              echo "AWS Load Balancer: $HOSTNAME"
+              break
+            fi
+            echo "Warte auf Load Balancer Hostname... ($i/18)"
+            sleep 10
+          done
+
+      - name: Build & Deploy Frontend → S3
+        run: |
+          cd 0.0.1/frontend
+          npm ci
+          VITE_API_BASE=${{ env.API_URL }} npm run build
+          aws s3 sync dist/ s3://${{ needs.terraform-aws.outputs.s3_bucket }} --delete
+          aws s3 cp dist/index.html s3://${{ needs.terraform-aws.outputs.s3_bucket }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate"

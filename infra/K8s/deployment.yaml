@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: idp
-          image: 065875800629.dkr.ecr.eu-central-1.amazonaws.com/idp-backend:latest
+          image: BACKEND_IMAGE
           imagePullPolicy: Always
           ports:
             - containerPort: 4000   # anpassen, falls deine App einen anderen Port nutzt
