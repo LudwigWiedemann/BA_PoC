@@ -1,0 +1,92 @@
+name: Frontend Deploy (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_api_base:
+        description: 'AWS Backend URL (z.B. http://1.2.3.4)'
+        required: true
+        type: string
+      gcp_api_base:
+        description: 'GCP Backend URL (z.B. http://5.6.7.8)'
+        required: true
+        type: string
+      s3_bucket:
+        description: 'AWS S3 Bucket Name'
+        required: true
+        type: string
+      gcs_bucket:
+        description: 'GCP GCS Bucket Name'
+        required: true
+        type: string
+
+jobs:
+  # ─────────────────────────────────────────
+  # DEPLOY → S3 (AWS)
+  # ─────────────────────────────────────────
+  deploy-s3:
+    name: Build & Deploy → S3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend für AWS
+        working-directory: 0.0.1/frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_BASE: ${{ github.event.inputs.aws_api_base }}
+
+      - name: AWS Auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync 0.0.1/frontend/dist/ s3://${{ github.event.inputs.s3_bucket }} --delete
+          aws s3 cp 0.0.1/frontend/dist/index.html \
+            s3://${{ github.event.inputs.s3_bucket }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+  # ─────────────────────────────────────────
+  # DEPLOY → GCS (GCP)
+  # ─────────────────────────────────────────
+  deploy-gcs:
+    name: Build & Deploy → GCS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend für GCP
+        working-directory: 0.0.1/frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_BASE: ${{ github.event.inputs.gcp_api_base }}
+
+      - name: GCP Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Sync to GCS
+        run: |
+          gsutil -m rsync -r -d 0.0.1/frontend/dist/ gs://${{ github.event.inputs.gcs_bucket }}/
+          gsutil setmeta -h "Cache-Control:no-cache, no-store" \
+            gs://${{ github.event.inputs.gcs_bucket }}/index.html
