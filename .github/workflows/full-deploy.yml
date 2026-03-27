@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "cluster_name=$(terraform output -raw gke_cluster_name)" >> $GITHUB_OUTPUT
           echo "cluster_location=$(terraform output -raw gke_cluster_location)" >> $GITHUB_OUTPUT
-          echo "gcs_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+          echo "gcs_bucket=$(terraform output -raw gcp_frontend_bucket_name)" >> $GITHUB_OUTPUT
 
   # ─────────────────────────────────────────
   # TERRAFORM AWS
@@ -94,7 +94,7 @@ jobs:
         working-directory: infra/AWS/Terraform
         run: |
           echo "cluster_name=$(terraform output -raw eks_cluster_name)" >> $GITHUB_OUTPUT
-          echo "s3_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(terraform output -raw aws_frontend_bucket_name)" >> $GITHUB_OUTPUT
 
   # ─────────────────────────────────────────
   # DEPLOY GCP (K8s + Frontend)
