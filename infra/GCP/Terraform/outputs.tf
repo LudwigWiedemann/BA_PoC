@@ -3,7 +3,7 @@ output "gke_cluster_name" {
   value = google_container_cluster.gke.name
 }
 
-output "frontend_bucket_name" {
+output "gcp_frontend_bucket_name" {
   value = google_storage_bucket.frontend.name
 }
 
