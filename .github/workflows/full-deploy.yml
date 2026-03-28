@@ -161,7 +161,7 @@ jobs:
 
       - name: Build & Deploy Frontend → GCS
         run: |
-          cd 0.0.1/frontend
+          cd 0.0.1/frontend/poc_frontend
           npm ci
           VITE_API_BASE=${{ steps.get-ip.outputs.api_url }} npm run build
           gsutil -m rsync -r -d dist/ gs://${{ needs.terraform-gcp.outputs.gcs_bucket }}/
@@ -229,7 +229,7 @@ jobs:
 
       - name: Build & Deploy Frontend → S3
         run: |
-          cd 0.0.1/frontend
+          cd 0.0.1/frontend/poc_frontend
           npm ci
           VITE_API_BASE=${{ env.API_URL }} npm run build
           aws s3 sync dist/ s3://${{ needs.terraform-aws.outputs.s3_bucket }} --delete
