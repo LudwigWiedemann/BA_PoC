@@ -33,7 +33,6 @@ spec:
         name: cockroach-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: gp3
         resources:
           requests:
             storage: 1Gi
@@ -44,7 +43,6 @@ metadata:
   name: cockroachdb
   namespace: idp
 spec:
-  clusterIP: None
   selector:
     app: cockroachdb
   ports:
