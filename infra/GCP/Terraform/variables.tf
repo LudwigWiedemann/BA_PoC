@@ -12,4 +12,5 @@ variable "region" {
 variable "gcp_service_account_email" {
   type        = string
   description = "Service Account used by GitHub Actions and GKE nodes"
+  default = "github-deployer@azure-poc-483517.iam.gserviceaccount.com"
 }
