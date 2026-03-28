@@ -122,7 +122,7 @@ jobs:
       - name: Build & Push Image → Artifact Registry
         run: |
           gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
@@ -135,7 +135,7 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl apply -f infra/K8s/db.yaml
-          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/idp-backend -n idp --timeout=120s
 
       - name: Get Ingress IP (GCP)
         id: get-ip
@@ -201,7 +201,7 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl apply -f infra/K8s/db.yaml
-          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/idp-backend -n idp --timeout=120s
 
       - name: Get Ingress Hostname (AWS)
         id: get-hostname
