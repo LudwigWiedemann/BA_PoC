@@ -54,7 +54,7 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl apply -f infra/K8s/db.yaml
-          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/idp-backend --timeout=120s
 
   # ─────────────────────────────────────────
   # AWS
@@ -98,4 +98,4 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl apply -f infra/K8s/db.yaml
-          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/idp-backend --timeout=120s
