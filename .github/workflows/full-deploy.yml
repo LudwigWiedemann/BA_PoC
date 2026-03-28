@@ -112,6 +112,12 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+      - name: Debug GKE values
+        run: |
+          echo "cluster_name='${{ needs.terraform-gcp.outputs.cluster_name }}'"
+          echo "cluster_location='${{ needs.terraform-gcp.outputs.cluster_location }}'"
+          echo "Doing it with the github secret would work (secrets.GCP_REGION)"
 
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v2
