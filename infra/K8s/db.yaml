@@ -28,14 +28,14 @@ spec:
           volumeMounts:
             - name: cockroach-data
               mountPath: /cockroach/cockroach-data
-    volumeClaimTemplates:
-      - metadata:
-          name: cockroach-data
-        spec:
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: cockroach-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
