@@ -50,6 +50,7 @@ jobs:
           terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
             -var="region=${{ secrets.GCP_REGION }}"
+            -var="gcp_service_account_email=${{ secrets.GCP_SERVICE_ACCOUNT }}"
 
       - id: tf-outputs
         name: Get Terraform Outputs
