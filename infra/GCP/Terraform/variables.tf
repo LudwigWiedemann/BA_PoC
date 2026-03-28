@@ -8,3 +8,8 @@ variable "region" {
   type        = string
   default     = "europe-west1"
 }
+
+variable "gcp_service_account_email" {
+  type        = string
+  description = "Service Account used by GitHub Actions and GKE nodes"
+}

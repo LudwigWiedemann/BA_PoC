@@ -30,6 +30,7 @@ resource "google_container_node_pool" "default" {
     machine_type = "e2-small"
     disk_type = "pd-standard"
     disk_size_gb = 20
+    service_account = var.gcp_service_account_email
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
