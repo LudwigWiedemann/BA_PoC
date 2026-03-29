@@ -111,7 +111,7 @@ jobs:
           S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
 
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
-          echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_OUTPUT"
+          echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_ENV"
 
           echo "Resolved cluster_name='$CLUSTER_NAME'"
           echo "Resolved s3_bucket='$S3_BUCKET'"
@@ -273,7 +273,7 @@ jobs:
         working-directory: 0.0.1/frontend/poc_frontend
         env:
           VITE_API_BASE: ${{ env.API_URL }}
-          S3_BUCKET: ${{ needs.terraform-aws.outputs.s3_bucket }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
         run: |
           echo "Inherited s3_bucket='$S3_BUCKET'"
 
