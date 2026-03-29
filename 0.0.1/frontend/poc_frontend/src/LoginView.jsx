@@ -55,7 +55,7 @@ export default function LoginView() {
     return (
         <div style={{ maxWidth: 400, margin: '5rem auto', textAlign: 'center' }}>
             <div style={{ color: CLOUD_ENV === 'aws' ? 'orange' : 'blue' }}>
-                <h1> IdP PoC - ({CLOUD_ENV})</h1>
+                <h1> IdP PoC - {CLOUD_ENV}</h1>
             </div>
             <h2 style={{ minHeight: '5rem', visibility: greeting ? 'visible' : 'hidden' }}>
                 {greeting}
