@@ -180,6 +180,7 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl rollout status deployment/idp-backend -n idp --timeout=120s
+      
       - name: Get Ingress IP (GCP)
         id: get-ip
         run: |
@@ -187,7 +188,7 @@ jobs:
             IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
               -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ -n "$IP" ]; then
-              echo "api_url=http://$IP" >> $GITHUB_OUTPUT
+              echo "API_URL=http://$IP" >> $GITHUB_ENV
               echo "GCP Ingress IP: $IP"
               break
             fi
@@ -195,14 +196,26 @@ jobs:
             sleep 10
           done
 
+      - name: Read Terraform outputs again (GCP)
+        working-directory: infra/GCP/Terraform
+        shell: bash
+        run: |
+          terraform init -reconfigure
+          GCS_BUCKET="$(terraform output -raw gcp_frontend_bucket_name | tr -d '\r\n')"
+          echo "gcs_bucket=$GCS_BUCKET" >> "$GITHUB_ENV"
+          echo "Resolved gcs_bucket='$GCS_BUCKET'"
+
       - name: Build & Deploy Frontend → GCS
+        env:
+          VITE_API_BASE: ${{ env.API_URL }}
+          GCS_BUCKET: ${{ env.GCS_BUCKET }}
         run: |
           cd 0.0.1/frontend/poc_frontend
           npm ci
-          VITE_API_BASE=${{ steps.get-ip.outputs.api_url }} npm run build
-          gsutil -m rsync -r -d dist/ gs://${{ needs.terraform-gcp.outputs.gcs_bucket }}/
+          npm run build
+          gsutil -m rsync -r -d dist/ gs://$GCS_BUCKET/
           gsutil setmeta -h "Cache-Control:no-cache, no-store" \
-            gs://${{ needs.terraform-gcp.outputs.gcs_bucket }}/index.html
+            gs://$GCS_BUCKET/index.html
 
   # ─────────────────────────────────────────
   # DEPLOY AWS (K8s + Frontend)
@@ -257,9 +270,6 @@ jobs:
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl rollout status deployment/idp-backend -n idp --timeout=120s
-
-
-        
 
       - name: Get Ingress Hostname (AWS)
         id: get-hostname
