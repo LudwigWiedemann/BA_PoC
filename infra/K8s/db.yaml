@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: cockroachdb
-          image: cockroachdb/cockroach:v24.1.26
+          image: cockroachdb/cockroach:v24.3.29
           command:
             - "/bin/bash"
             - "-ecx"
