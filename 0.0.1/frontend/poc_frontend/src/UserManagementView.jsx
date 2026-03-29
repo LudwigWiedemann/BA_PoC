@@ -63,7 +63,7 @@ export default function UserManagement() {
 
     return (
         <div>
-            <div style={{ color: CLOUD_ENV === 'aws' ? 'orange' : 'blue' }}>
+            <div style={{ color: CLOUD_ENV === 'AWS' ? 'orange' : 'blue' }}>
                 <h1>{CLOUD_ENV}</h1>
             </div>
             <h2>User Management</h2>
