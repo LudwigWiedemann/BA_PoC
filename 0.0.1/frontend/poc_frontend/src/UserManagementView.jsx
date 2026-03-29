@@ -5,6 +5,8 @@ import { socket } from "./socket";
 
 // const API_BASE = 'http://18.192.38.120:4000';
 const API_BASE = import.meta.env.VITE_API_BASE;
+const CLOUD_ENV = import.meta.env.VITE_CLOUD_ENV;
+
 
 export default function UserManagement() {
     const [userRegistryInput, setUserRegistryInput] = useState('');
@@ -61,6 +63,9 @@ export default function UserManagement() {
 
     return (
         <div>
+            <div style={{ color: CLOUD_ENV === 'aws' ? 'orange' : 'blue' }}>
+                <h1>({CLOUD_ENV})</h1>
+            </div>
             <h2>User Management</h2>
             <input
                 className="input"

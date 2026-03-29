@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 
 // const API_BASE = 'http://18.192.38.120:4000';
 const API_BASE = import.meta.env.VITE_API_BASE;
+const CLOUD_ENV = import.meta.env.VITE_CLOUD_ENV;
 
 export default function LoginView() {
     const [usernameInput, setUsernameInput] = useState('root');
@@ -53,7 +54,9 @@ export default function LoginView() {
 
     return (
         <div style={{ maxWidth: 400, margin: '5rem auto', textAlign: 'center' }}>
-            <h1>IdP PoC</h1>
+            <div style={{ color: CLOUD_ENV === 'aws' ? 'orange' : 'blue' }}>
+                <h1> IdP PoC - ({CLOUD_ENV})</h1>
+            </div>
             <h2 style={{ minHeight: '5rem', visibility: greeting ? 'visible' : 'hidden' }}>
                 {greeting}
             </h2>

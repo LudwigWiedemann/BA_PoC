@@ -6,6 +6,8 @@ import { socket } from "./socket";
 
 // const API_BASE = 'http://18.192.38.120:4000';
 const API_BASE = import.meta.env.VITE_API_BASE;
+const CLOUD_ENV = import.meta.env.VITE_CLOUD_ENV;
+
 // const API_BASE = 'http://localhost:4000';
 
 
@@ -74,6 +76,9 @@ export default function TokenManagement() {
 
     return (
         <div>
+            <div style={{ color: CLOUD_ENV === 'aws' ? 'orange' : 'blue' }}>
+                <h1>({CLOUD_ENV})</h1>
+            </div>
             <h2>Token Management</h2>
             <input
                 className="input"
