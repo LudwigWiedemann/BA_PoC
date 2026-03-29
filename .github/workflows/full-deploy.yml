@@ -111,7 +111,7 @@ jobs:
           S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
 
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
-          echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_ENV"
+          echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_OUTPUT"
 
           echo "Resolved cluster_name='$CLUSTER_NAME'"
           echo "Resolved s3_bucket='$S3_BUCKET'"
@@ -220,6 +220,10 @@ jobs:
         with:
           node-version: '20'
 
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
       - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -254,6 +258,9 @@ jobs:
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl rollout status deployment/idp-backend -n idp --timeout=120s
 
+
+        
+
       - name: Get Ingress Hostname (AWS)
         id: get-hostname
         run: |
@@ -268,6 +275,19 @@ jobs:
             echo "Warte auf Load Balancer Hostname... ($i/18)"
             sleep 10
           done
+      
+      - name: Read Terraform outputs again (AWS)
+        working-directory: infra/AWS/Terraform
+        shell: bash
+        run: |
+          CLUSTER_NAME="$(terraform output -raw eks_cluster_name | tr -d '\r\n')"
+          S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
+
+          echo "CLUSTER_NAME=$CLUSTER_NAME" >> "$GITHUB_ENV"
+          echo "S3_BUCKET=$S3_BUCKET" >> "$GITHUB_ENV"
+
+          echo "Resolved CLUSTER_NAME='$CLUSTER_NAME'"
+          echo "Resolved S3_BUCKET='$S3_BUCKET'"
 
       - name: Build & Deploy Frontend → S3
         working-directory: 0.0.1/frontend/poc_frontend
