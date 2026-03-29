@@ -232,6 +232,7 @@ jobs:
           cd 0.0.1/frontend/poc_frontend
           npm ci
           VITE_API_BASE=${{ env.API_URL }} npm run build
+          echo "this is the name of the s3 bucket" ${{ needs.terraform-aws.outputs.s3_bucket }}
           aws s3 sync dist/ s3://${{ needs.terraform-aws.outputs.s3_bucket }} --delete
           aws s3 cp dist/index.html s3://${{ needs.terraform-aws.outputs.s3_bucket }}/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
