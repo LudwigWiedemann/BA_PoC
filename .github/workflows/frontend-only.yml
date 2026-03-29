@@ -46,6 +46,7 @@ jobs:
           echo ${{ github.event.inputs.aws_api_base }}
         env:
           VITE_API_BASE: ${{ github.event.inputs.aws_api_base }}
+          VITE_CLOUD_ENV: aws
 
       - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
@@ -81,6 +82,7 @@ jobs:
           npm run build
         env:
           VITE_API_BASE: ${{ github.event.inputs.gcp_api_base }}
+          VITE_CLOUD_ENV: gcp
 
       - name: GCP Auth (WIF)
         uses: google-github-actions/auth@v2
