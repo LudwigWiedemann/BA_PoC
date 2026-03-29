@@ -56,11 +56,19 @@ jobs:
       - id: tf-outputs
         name: Get Terraform Outputs
         working-directory: infra/GCP/Terraform
+        shell: bash
         run: |
-          echo "cluster_name=$(terraform output -raw gke_cluster_name)" >> $GITHUB_OUTPUT
-          echo "cluster_location=$(terraform output -raw gke_cluster_location)" >> $GITHUB_OUTPUT
-          echo "gcs_bucket=$(terraform output -raw gcp_frontend_bucket_name)" >> $GITHUB_OUTPUT
+          CLUSTER_NAME="$(terraform output -raw gke_cluster_name | tr -d '\r\n')"
+          CLUSTER_LOCATION="$(terraform output -raw gke_cluster_location | tr -d '\r\n')"
+          GCS_BUCKET="$(terraform output -raw gcp_frontend_bucket_name | tr -d '\r\n')"
 
+          echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
+          echo "cluster_location=$CLUSTER_LOCATION" >> "$GITHUB_OUTPUT"
+          echo "gcs_bucket=$GCS_BUCKET" >> "$GITHUB_OUTPUT"
+
+          echo "Resolved cluster_name='$CLUSTER_NAME'"
+          echo "Resolved cluster_location='$CLUSTER_LOCATION'"
+          echo "Resolved gcs_bucket='$GCS_BUCKET'"
   # ─────────────────────────────────────────
   # TERRAFORM AWS
   # ─────────────────────────────────────────
@@ -97,10 +105,16 @@ jobs:
       - id: tf-outputs
         name: Get Terraform Outputs
         working-directory: infra/AWS/Terraform
+        shell: bash
         run: |
-          echo "cluster_name=$(terraform output -raw eks_cluster_name)" >> $GITHUB_OUTPUT
-          echo "s3_bucket=$(terraform output -raw aws_frontend_bucket_name)" >> $GITHUB_OUTPUT
+          CLUSTER_NAME="$(terraform output -raw eks_cluster_name | tr -d '\r\n')"
+          S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
 
+          echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
+          echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_OUTPUT"
+
+          echo "Resolved cluster_name='$CLUSTER_NAME'"
+          echo "Resolved s3_bucket='$S3_BUCKET'"
   # ─────────────────────────────────────────
   # DEPLOY GCP (K8s + Frontend)
   # ─────────────────────────────────────────
@@ -113,6 +127,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: GCP Auth (WIF)
         uses: google-github-actions/auth@v2
         with:
@@ -124,6 +142,18 @@ jobs:
           echo "cluster_name='${{ needs.terraform-gcp.outputs.cluster_name }}'"
           echo "cluster_location='${{ needs.terraform-gcp.outputs.cluster_location }}'"
           echo "Doing it with the github secret would work (secrets.GCP_REGION)"
+      
+      - name: Fail fast if GKE outputs are missing
+        run: |
+          if [ -z "${{ needs.terraform-gcp.outputs.cluster_name }}" ]; then
+            echo "ERROR: cluster_name is empty"
+            exit 1
+          fi
+
+          if [ -z "${{ needs.terraform-gcp.outputs.cluster_location }}" ]; then
+            echo "ERROR: cluster_location is empty"
+            exit 1
+          fi
 
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -134,7 +164,7 @@ jobs:
       - name: Build & Push Image → Artifact Registry
         run: |
           gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}:${{ github.sha }}"
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
@@ -186,6 +216,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: AWS Auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -236,11 +270,20 @@ jobs:
           done
 
       - name: Build & Deploy Frontend → S3
+        working-directory: 0.0.1/frontend/poc_frontend
+        env:
+          VITE_API_BASE: ${{ env.API_URL }}
+          S3_BUCKET: ${{ needs.terraform-aws.outputs.s3_bucket }}
         run: |
-          cd 0.0.1/frontend/poc_frontend
+          echo "Inherited s3_bucket='$S3_BUCKET'"
+
+          if [ -z "$S3_BUCKET" ]; then
+            echo "ERROR: S3 bucket output is empty"
+            exit 1
+          fi
+
           npm ci
-          VITE_API_BASE=${{ env.API_URL }} npm run build
-          echo "this is the name of the s3 bucket" ${{ needs.terraform-aws.outputs.s3_bucket }}
-          aws s3 sync dist/ s3://${{ needs.terraform-aws.outputs.s3_bucket }} --delete
-          aws s3 cp dist/index.html s3://${{ needs.terraform-aws.outputs.s3_bucket }}/index.html \
+          npm run build
+          aws s3 sync dist/ s3://$S3_BUCKET --delete
+          aws s3 cp dist/index.html s3://$S3_BUCKET/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
