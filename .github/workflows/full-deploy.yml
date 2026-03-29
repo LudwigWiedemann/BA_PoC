@@ -59,15 +59,12 @@ jobs:
         shell: bash
         run: |
           CLUSTER_NAME="$(terraform output -raw gke_cluster_name | tr -d '\r\n')"
-          CLUSTER_LOCATION="$(terraform output -raw gke_cluster_location | tr -d '\r\n')"
           GCS_BUCKET="$(terraform output -raw gcp_frontend_bucket_name | tr -d '\r\n')"
 
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
-          echo "cluster_location=$CLUSTER_LOCATION" >> "$GITHUB_OUTPUT"
           echo "gcs_bucket=$GCS_BUCKET" >> "$GITHUB_OUTPUT"
 
           echo "Resolved cluster_name='$CLUSTER_NAME'"
-          echo "Resolved cluster_location='$CLUSTER_LOCATION'"
           echo "Resolved gcs_bucket='$GCS_BUCKET'"
   # ─────────────────────────────────────────
   # TERRAFORM AWS
@@ -140,8 +137,6 @@ jobs:
       - name: Debug GKE values
         run: |
           echo "cluster_name='${{ needs.terraform-gcp.outputs.cluster_name }}'"
-          echo "cluster_location='${{ needs.terraform-gcp.outputs.cluster_location }}'"
-          echo "Doing it with the github secret would work (secrets.GCP_REGION)"
       
       - name: Fail fast if GKE outputs are missing
         run: |
@@ -150,16 +145,11 @@ jobs:
             exit 1
           fi
 
-          if [ -z "${{ needs.terraform-gcp.outputs.cluster_location }}" ]; then
-            echo "ERROR: cluster_location is empty"
-            exit 1
-          fi
-
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ needs.terraform-gcp.outputs.cluster_name }}
-          location: ${{ needs.terraform-gcp.outputs.cluster_location }}
+          location: ${{ secrets.GCP_REGION }}
 
       - name: Build & Push Image → Artifact Registry
         run: |
