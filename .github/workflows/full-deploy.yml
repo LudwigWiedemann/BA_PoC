@@ -280,6 +280,7 @@ jobs:
         working-directory: infra/AWS/Terraform
         shell: bash
         run: |
+          terraform init -reconfigure
           CLUSTER_NAME="$(terraform output -raw eks_cluster_name | tr -d '\r\n')"
           S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
 
