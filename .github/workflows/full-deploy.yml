@@ -7,17 +7,15 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      action:
-        description: 'Terraform action'
+      provider:
+        description: 'Welche Cloud deployen?'
         required: true
-        default: 'apply'
+        default: 'both'
         type: choice
-        options: [apply, destroy]
-  push:
-    branches: [main]
-    paths:
-      - 'infra/GCP/Terraform/**'
-      - 'infra/AWS/Terraform/**'
+        options:
+          - aws
+          - gcp
+          - both
 
 jobs:
   # ─────────────────────────────────────────
@@ -26,6 +24,9 @@ jobs:
   terraform-gcp:
     name: Terraform GCP
     runs-on: ubuntu-latest
+    if: >
+      github.event.inputs.provider == 'gcp' ||
+      github.event.inputs.provider == 'both'
     outputs:
       cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
       cluster_location: ${{ steps.tf-outputs.outputs.cluster_location }}
@@ -47,7 +48,7 @@ jobs:
         working-directory: infra/GCP/Terraform
         run: |
           terraform init
-          terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
+          terraform apply -auto-approve \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
             -var="region=${{ secrets.GCP_REGION }}" \
             -var="gcp_service_account_email=${{ secrets.GCP_SERVICE_ACCOUNT }}"
@@ -66,6 +67,9 @@ jobs:
   terraform-aws:
     name: Terraform AWS
     runs-on: ubuntu-latest
+    if: >
+      github.event.inputs.provider == 'aws' ||
+      github.event.inputs.provider == 'both'
     outputs:
       cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
       s3_bucket: ${{ steps.tf-outputs.outputs.s3_bucket }}
@@ -87,7 +91,7 @@ jobs:
         working-directory: infra/AWS/Terraform
         run: |
           terraform init
-          terraform ${{ github.event.inputs.action || 'apply' }} -auto-approve \
+          terraform apply -auto-approve \
             -var="region=${{ secrets.AWS_REGION }}"
 
       - id: tf-outputs
@@ -104,6 +108,8 @@ jobs:
     name: Deploy → GKE + GCS
     needs: terraform-gcp
     runs-on: ubuntu-latest
+    if: >
+      needs.terraform-gcp.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -175,6 +181,8 @@ jobs:
     name: Deploy → EKS + S3
     needs: terraform-aws
     runs-on: ubuntu-latest
+    if: >
+      needs.terraform-aws.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -232,6 +240,7 @@ jobs:
           cd 0.0.1/frontend/poc_frontend
           npm ci
           VITE_API_BASE=${{ env.API_URL }} npm run build
+          echo "this is the name of the s3 bucket" ${{ needs.terraform-aws.outputs.s3_bucket }}
           aws s3 sync dist/ s3://${{ needs.terraform-aws.outputs.s3_bucket }} --delete
           aws s3 cp dist/index.html s3://${{ needs.terraform-aws.outputs.s3_bucket }}/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
