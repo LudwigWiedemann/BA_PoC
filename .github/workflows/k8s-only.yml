@@ -27,6 +27,8 @@ jobs:
     if: >
       github.event.inputs.provider == 'gcp' ||
       github.event.inputs.provider == 'both'
+    outputs:
+      cockroach_addr: ${{ steps.gcp-cockroach-lb.outputs.addr }}
     steps:
       - uses: actions/checkout@v4
 
@@ -98,6 +100,8 @@ jobs:
     if: >
       github.event.inputs.provider == 'aws' ||
       github.event.inputs.provider == 'both'
+    outputs:
+      cockroach_addr: ${{ steps.aws-cockroach-lb.outputs.addr }}
     steps:
       - uses: actions/checkout@v4
 
