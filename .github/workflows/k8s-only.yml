@@ -137,7 +137,8 @@ jobs:
             ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
             if [ -n "$ADDR" ]; then
               echo "addr=$ADDR" >> "$GITHUB_OUTPUT"
-              echo "aws cockroach hostname is $ADDR"
+              echo "aws cockroach hostname is $addr"
+              echo "Step addr = '${{ steps.aws-cockroach-lb.outputs.addr }}'"
               exit 0
             fi
             echo "Warte auf AWS Cockroach LoadBalancer... ($i/36)"
