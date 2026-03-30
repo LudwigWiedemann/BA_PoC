@@ -25,7 +25,7 @@ await pool.query(`
 await pool.query(`
   CREATE TABLE IF NOT EXISTS tokens (
     id STRING PRIMARY KEY,
-    username STRING REFERENCES users(username),
+    username STRING,
     expiry BIGINT,
     createdAt TIMESTAMPTZ DEFAULT now()
   )
