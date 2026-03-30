@@ -65,6 +65,7 @@ jobs:
             ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ -n "$ADDR" ]; then
               echo "addr=$ADDR" >> "$GITHUB_OUTPUT"
+              echo "Step addr = '${{ steps.gcp-cockroach-lb.outputs.addr }}'"
               exit 0
             fi
             echo "Warte auf GCP Cockroach LoadBalancer... ($i/36)"
@@ -197,7 +198,7 @@ jobs:
   setup-replication-aws:
     name: Setup replication on AWS
     runs-on: ubuntu-latest
-    needs: [deploy-gcp, deploy-aws]
+    needs: [deploy-aws, deploy-gcp]
     if: >
       always() &&
       needs.deploy-aws.result == 'success' &&
