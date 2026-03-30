@@ -166,7 +166,7 @@ jobs:
   setup-replication-gcp:
     name: Setup replication on GCP
     runs-on: ubuntu-latest
-    needs: [deploy-aws, deploy-gcp]
+    needs: [deploy-gcp, deploy-aws]
     if: >
       always() &&
       needs.deploy-gcp.result == 'success' &&
@@ -199,7 +199,7 @@ jobs:
   setup-replication-aws:
     name: Setup replication on AWS
     runs-on: ubuntu-latest
-    needs: [deploy-aws, deploy-gcp]
+    needs: [deploy-gcp, deploy-aws]
     if: >
       always() &&
       needs.deploy-aws.result == 'success' &&
@@ -226,6 +226,7 @@ jobs:
           GCP_COCKROACH_ADDR: ${{ needs.deploy-gcp.outputs.cockroach_addr }}
         run: |
           echo "STEP output is ${{ steps.deploy-gcp.outputs.cockroach_addr }}"
+          echo "GCP_COCKROACH_ADDR=$GCP_COCKROACH_ADDR"
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE EXTERNAL CONNECTION gcp_source AS 'postgresql://root@${GCP_COCKROACH_ADDR}:26257/idp?sslmode=disable';"
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE LOGICAL REPLICATION STREAM FROM TABLES (idp.public.users, idp.public.tokens) ON 'external://gcp_source' INTO TABLES (idp.public.users, idp.public.tokens) WITH MODE = 'validated';"
 
