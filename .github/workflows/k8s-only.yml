@@ -77,12 +77,12 @@ jobs:
           ADVERTISE_ADDR: ${{ steps.gcp-cockroach-lb.outputs.addr }}
           STORAGE_CLASS: standard-rwo
         run: |
-          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           sed -i "s|STORAGE_CLASS|$STORAGE_CLASS|g" infra/K8s/db.yaml
           sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
+          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
@@ -150,12 +150,12 @@ jobs:
           ADVERTISE_ADDR: ${{ steps.aws-cockroach-lb.outputs.addr }}
           STORAGE_CLASS: gp2
         run: |
-          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           sed -i "s|STORAGE_CLASS|$STORAGE_CLASS|g" infra/K8s/db.yaml
           sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
+          sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
