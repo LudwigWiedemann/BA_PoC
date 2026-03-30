@@ -173,6 +173,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: AWS Auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get EKS Credentials
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ secrets.EKS_CLUSTER_NAME }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Read AWS Cockroach hostname
+        id: aws_addr
+        shell: bash
+        run: |
+          ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "addr=$ADDR" >> "$GITHUB_ENV"
+          echo "AWS hostname fetched again"
+
       - name: GCP Auth (WIF)
         uses: google-github-actions/auth@v2
         with:
@@ -187,7 +208,7 @@ jobs:
 
       - name: Configure GCP logical replication stream
         env:
-          AWS_COCKROACH_ADDR: ${{ needs.deploy_aws.outputs.cockroach_addr }}
+          AWS_COCKROACH_ADDR: ${{ env.ADDR }}
         run: |
           echo "AWS Output = ${{ needs.deploy_aws.outputs.cockroach_addr }}"
           echo "GCP Output = ${{ needs.deploy-gcp.outputs.cockroach_addr }}"
