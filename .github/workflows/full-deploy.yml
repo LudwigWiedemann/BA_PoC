@@ -47,11 +47,11 @@ jobs:
       - name: Terraform Init & Apply (GCP)
         working-directory: infra/GCP/Terraform
         run: |
-          echo "region = ${{ secrets.GCP_REGION }} for GCP"
+          echo "region = ${{ vars.GCP_REGION }} for GCP"
           terraform init
           terraform apply -auto-approve \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="region=${{ secrets.GCP_REGION }}" \
+            -var="region=${{ vars.GCP_REGION }}" \
             -var="gcp_service_account_email=${{ secrets.GCP_SERVICE_ACCOUNT }}"
 
       - id: tf-outputs
@@ -150,12 +150,12 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ needs.terraform-gcp.outputs.cluster_name }}
-          location: ${{ secrets.GCP_REGION }}
+          location: ${{ vars.GCP_REGION }}
 
       - name: Build & Push Image → Artifact Registry
         run: |
-          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
+          gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
