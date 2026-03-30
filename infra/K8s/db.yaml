@@ -21,7 +21,7 @@ spec:
             - "/bin/bash"
             - "-ecx"
             - |
-              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=afe2221ded381482c939af94096a78a5-1239006341.eu-central-1.elb.amazonaws.com
+              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=35.189.239.56
           ports:
             - containerPort: 26257 # SQL
             - containerPort: 8080  # Admin UI
@@ -33,7 +33,7 @@ spec:
         name: cockroach-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: STORAGE_CLASS
+        storageClassName: gp2
         resources:
           requests:
             storage: 1Gi
