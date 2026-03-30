@@ -187,8 +187,9 @@ jobs:
 
       - name: Configure GCP logical replication stream
         env:
-          AWS_COCKROACH_ADDR: ${{ needs.deploy-aws.outputs.cockroach_addr != '' && needs.deploy-aws.outputs.cockroach_addr }}
+          AWS_COCKROACH_ADDR: ${{ needs.deploy-aws.outputs.cockroach_addr }}
         run: |
+          echo "AWS_COCKROACH_ADDR=$AWS_COCKROACH_ADDR"
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE EXTERNAL CONNECTION aws_source AS 'postgresql://root@${AWS_COCKROACH_ADDR}:26257/idp?sslmode=disable';"
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE LOGICAL REPLICATION STREAM FROM TABLES (idp.public.users, idp.public.tokens) ON 'external://aws_source' INTO TABLES (idp.public.users, idp.public.tokens) WITH MODE = 'validated';"
 
@@ -219,7 +220,7 @@ jobs:
 
       - name: Configure AWS logical replication stream
         env:
-          GCP_COCKROACH_ADDR: ${{ needs.deploy-gcp.outputs.cockroach_addr != '' && needs.deploy-gcp.outputs.cockroach_addr }}
+          GCP_COCKROACH_ADDR: ${{ needs.deploy-gcp.outputs.cockroach_addr }}
         run: |
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE EXTERNAL CONNECTION gcp_source AS 'postgresql://root@${GCP_COCKROACH_ADDR}:26257/idp?sslmode=disable';"
           kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE LOGICAL REPLICATION STREAM FROM TABLES (idp.public.users, idp.public.tokens) ON 'external://gcp_source' INTO TABLES (idp.public.users, idp.public.tokens) WITH MODE = 'validated';"
