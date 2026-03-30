@@ -33,7 +33,7 @@ spec:
         name: cockroach-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: standard-rwo
+        storageClassName: STORAGE_CLASS
         resources:
           requests:
             storage: 1Gi
