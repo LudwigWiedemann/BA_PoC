@@ -47,6 +47,7 @@ jobs:
       - name: Terraform Init & Apply (GCP)
         working-directory: infra/GCP/Terraform
         run: |
+          echo "region = ${{ secrets.GCP_REGION }} for GCP"
           terraform init
           terraform apply -auto-approve \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
