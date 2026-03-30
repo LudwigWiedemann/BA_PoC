@@ -164,7 +164,7 @@ jobs:
   setup-replication-gcp:
     name: Setup replication on GCP
     runs-on: ubuntu-latest
-    needs: [deploy-gcp, deploy-aws]
+    needs: [deploy-aws, deploy-gcp]
     if: >
       always() &&
       needs.deploy-gcp.result == 'success' &&
