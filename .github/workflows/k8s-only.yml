@@ -52,8 +52,6 @@ jobs:
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
 
-
-
       - name: Deploy namespace + Cockroach external service
         run: |
           kubectl apply -f infra/K8s/namespace.yaml
@@ -73,7 +71,6 @@ jobs:
             sleep 10
           done
           exit 1
-
 
       - name: Apply K8s Manifests
         env:
@@ -140,6 +137,7 @@ jobs:
             ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
             if [ -n "$ADDR" ]; then
               echo "addr=$ADDR" >> "$GITHUB_OUTPUT"
+              echo "aws cockroach hostname is $ADDR"
               exit 0
             fi
             echo "Warte auf AWS Cockroach LoadBalancer... ($i/36)"

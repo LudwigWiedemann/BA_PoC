@@ -61,10 +61,8 @@ jobs:
         run: |
           CLUSTER_NAME="$(terraform output -raw gke_cluster_name | tr -d '\r\n')"
           GCS_BUCKET="$(terraform output -raw gcp_frontend_bucket_name | tr -d '\r\n')"
-
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
           echo "gcs_bucket=$GCS_BUCKET" >> "$GITHUB_OUTPUT"
-
           echo "Resolved cluster_name='$CLUSTER_NAME'"
           echo "Resolved gcs_bucket='$GCS_BUCKET'"
   # ─────────────────────────────────────────
@@ -122,6 +120,8 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       needs.terraform-gcp.result == 'success'
+    outputs:
+      cockroach_addr: ${{ steps.gcp-cockroach-lb.outputs.addr }}
     steps:
       - uses: actions/checkout@v4
 
@@ -164,13 +164,37 @@ jobs:
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
 
+      - name: Deploy namespace + Cockroach external service
+        run: |
+          kubectl apply -f infra/K8s/namespace.yaml
+          kubectl apply -f infra/K8s/cockroachdb-external.yaml
+
+      - name: Wait for GCP Cockroach LoadBalancer
+        id: gcp-cockroach-lb
+        shell: bash
+        run: |
+          for i in {1..36}; do
+            ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$ADDR" ]; then
+              echo "addr=$ADDR" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Warte auf GCP Cockroach LoadBalancer... ($i/36)"
+            sleep 10
+          done
+          exit 1
+      
       - name: Deploy K8s Manifests
+        env:
+          ADVERTISE_ADDR: ${{ steps.gcp-cockroach-lb.outputs.addr }}
+          STORAGE_CLASS: standard-rwo
         run: |
           sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
-          kubectl apply -f infra/K8s/namespace.yaml
-          sed -i "s|STORAGE_CLASS|standard-rwo|g" infra/K8s/db.yaml
+          sed -i "s|STORAGE_CLASS|$STORAGE_CLASS|g" infra/K8s/db.yaml
+          sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
@@ -222,6 +246,8 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       needs.terraform-aws.result == 'success'
+    outputs:
+      cockroach_addr: ${{ steps.aws-cockroach-lb.outputs.addr }}
     steps:
       - uses: actions/checkout@v4
 
@@ -255,13 +281,37 @@ jobs:
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
 
-      - name: Deploy K8s Manifests
+      - name: Deploy namespace + Cockroach external service
+        run: |
+          kubectl apply -f infra/K8s/namespace.yaml
+          kubectl apply -f infra/K8s/cockroachdb-external.yaml
+
+      - name: Wait for AWS Cockroach LoadBalancer
+        id: aws-cockroach-lb
+        shell: bash
+        run: |
+          for i in {1..36}; do
+            ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+            if [ -n "$ADDR" ]; then
+              echo "addr=$ADDR" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Warte auf AWS Cockroach LoadBalancer... ($i/36)"
+            sleep 10
+          done
+          exit 1
+
+      - name: Apply K8s Manifests
+        env:
+          ADVERTISE_ADDR: ${{ steps.aws-cockroach-lb.outputs.addr }}
+          STORAGE_CLASS: gp2
         run: |
           sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
-          kubectl apply -f infra/K8s/namespace.yaml
-          sed -i "s|STORAGE_CLASS|gp2|g" infra/K8s/db.yaml
+          sed -i "s|STORAGE_CLASS|$STORAGE_CLASS|g" infra/K8s/db.yaml
+          sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
@@ -315,3 +365,69 @@ jobs:
           aws s3 sync dist/ s3://$S3_BUCKET --delete
           aws s3 cp dist/index.html s3://$S3_BUCKET/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
+
+  setup-replication-gcp:
+    name: Setup replication on GCP
+    runs-on: ubuntu-latest
+    needs: [deploy-gcp, deploy-aws]
+    if: >
+      always() &&
+      needs.deploy-gcp.result == 'success' &&
+      needs.deploy-aws.result == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GCP Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ vars.GCP_REGION }}
+
+      - name: Configure GCP logical replication stream
+        env:
+          AWS_COCKROACH_ADDR: ${{ needs.deploy-aws.outputs.cockroach_addr != '' && needs.deploy-aws.outputs.cockroach_addr }}
+        run: |
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE EXTERNAL CONNECTION aws_source AS 'postgresql://root@${AWS_COCKROACH_ADDR}:26257/idp?sslmode=disable';"
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE LOGICAL REPLICATION STREAM FROM TABLES (idp.public.users, idp.public.tokens) ON 'external://aws_source' INTO TABLES (idp.public.users, idp.public.tokens) WITH MODE = 'validated';"
+
+  setup-replication-aws:
+    name: Setup replication on AWS
+    runs-on: ubuntu-latest
+    needs: [deploy-gcp, deploy-aws]
+    if: >
+      always() &&
+      needs.deploy-aws.result == 'success' &&
+      needs.deploy-gcp.result == 'success'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS Auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get EKS Credentials
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ secrets.EKS_CLUSTER_NAME }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Configure AWS logical replication stream
+        env:
+          GCP_COCKROACH_ADDR: ${{ needs.deploy-gcp.outputs.cockroach_addr != '' && needs.deploy-gcp.outputs.cockroach_addr }}
+        run: |
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE EXTERNAL CONNECTION gcp_source AS 'postgresql://root@${GCP_COCKROACH_ADDR}:26257/idp?sslmode=disable';"
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -d idp -e "CREATE LOGICAL REPLICATION STREAM FROM TABLES (idp.public.users, idp.public.tokens) ON 'external://gcp_source' INTO TABLES (idp.public.users, idp.public.tokens) WITH MODE = 'validated';"
+
+
+  
