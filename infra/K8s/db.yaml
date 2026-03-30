@@ -21,7 +21,7 @@ spec:
             - "/bin/bash"
             - "-ecx"
             - |
-              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=cockroachdb
+              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=a6759acd8d0f24f5f95580daf7935735-1284992333.eu-central-1.elb.amazonaws.com
           ports:
             - containerPort: 26257 # SQL
             - containerPort: 8080  # Admin UI
