@@ -40,12 +40,12 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GCP_REGION }}
+          location: ${{ vars.GCP_REGION }}
 
       - name: Build & Push Image → Artifact Registry
         run: |
-          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
+          gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
           docker push $IMAGE
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
@@ -79,17 +79,17 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Get EKS Credentials
         run: |
           aws eks update-kubeconfig \
             --name ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ vars.AWS_REGION }}
 
       - name: Build & Push Image → ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
             | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
           IMAGE="${{ secrets.AWS_ECR_URL }}:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
