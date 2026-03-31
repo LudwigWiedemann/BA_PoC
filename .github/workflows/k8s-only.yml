@@ -81,12 +81,12 @@ jobs:
           sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
-          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
           sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl rollout status deployment/idp-backend -n idp --timeout=120s
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
 
   # ─────────────────────────────────────────
   # AWS
@@ -107,17 +107,17 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Get EKS Credentials
         run: |
           aws eks update-kubeconfig \
             --name ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ vars.AWS_REGION }}
 
       - name: Build & Push Image → ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
             | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
           IMAGE="${{ secrets.AWS_ECR_URL }}:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
@@ -154,12 +154,12 @@ jobs:
           sed -i "s|ADVERTISE_ADDR_PLACEHOLDER|$ADVERTISE_ADDR|g" infra/K8s/db.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
-          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
           sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/deployment.yaml
           kubectl apply -f infra/K8s/service.yaml
           kubectl apply -f infra/K8s/ingress.yaml
           kubectl rollout status deployment/idp-backend -n idp --timeout=120s
+          kubectl exec -n idp cockroachdb-0 -- ./cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
   
   setup-replication-gcp:
     name: Setup replication on GCP
@@ -178,13 +178,13 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Get EKS Credentials
         run: |
           aws eks update-kubeconfig \
             --name ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ vars.AWS_REGION }}
 
       - name: Read AWS Cockroach hostname
         id: aws_addr
@@ -234,13 +234,13 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Get EKS Credentials
         run: |
           aws eks update-kubeconfig \
             --name ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ vars.AWS_REGION }}
 
       - name: Configure AWS logical replication stream
         env:
