@@ -191,7 +191,7 @@ jobs:
         shell: bash
         run: |
           ADDR=$(kubectl get svc -n idp cockroachdb-external -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-          echo "addr=$ADDR" >> "$GITHUB_ENV"
+          echo "ADDR=$ADDR" >> "$GITHUB_ENV"
           echo "AWS hostname fetched again"
 
       - name: GCP Auth (WIF)
