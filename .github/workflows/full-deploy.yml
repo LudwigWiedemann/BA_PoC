@@ -161,7 +161,7 @@ jobs:
           gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
           IMAGE="europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPO }}/backend:${{ github.sha }}"
           docker build -t $IMAGE ./0.0.1/backend
-          docker push $IMAGE
+          docker push $IMAGE  
           echo "IMAGE_URL=$IMAGE" >> $GITHUB_ENV
 
       - name: Deploy namespace + Cockroach external service
@@ -225,12 +225,12 @@ jobs:
           echo "Resolved gcs_bucket='$GCS_BUCKET'"
 
       - name: Build & Deploy Frontend → GCS
+        working-directory: 0.0.1/frontend/poc_frontend
         env:
           VITE_API_BASE: ${{ env.API_URL }}
           GCS_BUCKET: ${{ env.GCS_BUCKET }}
           VITE_CLOUD_ENV: GCP
         run: |
-          cd 0.0.1/frontend/poc_frontend
           npm ci
           npm run build
           gsutil -m rsync -r -d dist/ gs://$GCS_BUCKET/
