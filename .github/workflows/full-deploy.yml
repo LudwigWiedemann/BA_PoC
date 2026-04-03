@@ -224,11 +224,7 @@ jobs:
           echo "GCS_BUCKET=$GCS_BUCKET" >> "$GITHUB_ENV"
           echo "Resolved gcs_bucket='$GCS_BUCKET'"
 
-      - name: GCP Auth (WIF)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
 
       - name: Build & Deploy Frontend → GCS
         working-directory: 0.0.1/frontend/poc_frontend
