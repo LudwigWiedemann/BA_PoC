@@ -6,7 +6,7 @@ resource "google_compute_address" "wg_ip" {
 resource "google_compute_instance" "wg_gateway" {
   name         = "wireguard-gateway"
   machine_type = "e2-micro"
-  zone         = "${var.region}-a"
+  zone         = "${var.region}-c"
 
   can_ip_forward = true
 
