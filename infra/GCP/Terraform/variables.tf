@@ -6,7 +6,7 @@ variable "project_id" {
 
 variable "region" {
   type        = string
-  default     = "us-central1"
+  default     = "europe-west1"
 }
 
 variable "gcp_service_account_email" {
