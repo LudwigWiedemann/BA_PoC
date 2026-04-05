@@ -53,6 +53,18 @@ resource "google_compute_firewall" "wg_udp" {
   target_tags   = ["wireguard-gateway"]
 }
 
+resource "google_compute_firewall" "wg_icmp" {
+  name    = "allow-wireguard-icmp"
+  network = google_compute_network.vpc.name
+
+  allow {
+    protocol = "icmp"
+  }
+
+  source_ranges = ["10.0.0.0/16"]
+  target_tags   = ["wireguard-gateway"]
+}
+
 resource "google_compute_route" "to_aws" {
   name       = "route-to-aws"
   network    = google_compute_network.vpc.name

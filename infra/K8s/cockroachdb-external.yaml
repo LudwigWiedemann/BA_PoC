@@ -4,10 +4,12 @@ metadata:
   name: cockroachdb-external
   namespace: idp
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: cockroachdb
   ports:
     - name: sql
+      protocol: TCP
       port: 26257
       targetPort: 26257
+      nodePort: 32057

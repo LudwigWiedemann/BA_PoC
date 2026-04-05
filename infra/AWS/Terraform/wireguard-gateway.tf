@@ -19,6 +19,14 @@ resource "aws_security_group" "wg_gateway_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "ICMP from GCP"
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["10.20.0.0/16"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -67,7 +75,8 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_route" "to_gcp" {
-  route_table_id         = module.vpc.private_route_table_ids[0]
+  for_each               = toset(module.vpc.private_route_table_ids)
+  route_table_id         = each.value
   destination_cidr_block = "10.20.0.0/16"
   network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
 }
