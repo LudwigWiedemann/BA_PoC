@@ -75,8 +75,7 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_route" "to_gcp" {
-  for_each               = toset(module.vpc.private_route_table_ids)
-  route_table_id         = each.value
+  froute_table_id         = module.vpc.private_route_table_ids[0]
   destination_cidr_block = "10.20.0.0/16"
   network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
 }
