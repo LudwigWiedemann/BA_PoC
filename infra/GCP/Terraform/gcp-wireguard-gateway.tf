@@ -52,3 +52,13 @@ resource "google_compute_firewall" "wg_udp" {
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["wireguard-gateway"]
 }
+
+resource "google_compute_route" "to_aws" {
+  name       = "route-to-aws"
+  network    = google_compute_network.vpc.name
+  dest_range = "10.0.0.0/16"
+
+  next_hop_instance      = google_compute_instance.wg_gateway.name
+  next_hop_instance_zone = google_compute_instance.wg_gateway.zone
+  priority               = 1000
+}
