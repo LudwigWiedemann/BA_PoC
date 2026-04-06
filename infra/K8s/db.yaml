@@ -21,7 +21,7 @@ spec:
             - "/bin/bash"
             - "-ecx"
             - |
-              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=ADVERTISE_ADDR_PLACEHOLDER
+              exec cockroach start-single-node --insecure --store=/cockroach/cockroach-data --http-port=8080 --listen-addr=0.0.0.0 --advertise-addr=cockroachdb
           ports:
             - containerPort: 26257 # SQL
             - containerPort: 8080  # Admin UI
@@ -33,7 +33,7 @@ spec:
         name: cockroach-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: STORAGE_CLASS
+        storageClassName: standard-rwo
         resources:
           requests:
             storage: 1Gi

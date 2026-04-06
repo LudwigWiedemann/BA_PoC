@@ -65,10 +65,35 @@ resource "google_compute_firewall" "wg_icmp" {
   target_tags   = ["wireguard-gateway"]
 }
 
+resource "google_compute_firewall" "allow_cockroach_from_aws_wg" {
+  name    = "allow-cockroach-from-aws-wg"
+  network = google_compute_network.vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["26257"]
+  }
+
+  source_ranges = [
+    "10.255.0.0/30",
+    "10.0.0.0/16"
+  ]
+}
+
 resource "google_compute_route" "to_aws" {
   name       = "route-to-aws"
   network    = google_compute_network.vpc.name
   dest_range = "10.0.0.0/16"
+
+  next_hop_instance      = google_compute_instance.wg_gateway.name
+  next_hop_instance_zone = google_compute_instance.wg_gateway.zone
+  priority               = 1000
+}
+
+resource "google_compute_route" "to_aws_wg_net" {
+  name       = "route-to-aws-wg-net"
+  network    = google_compute_network.vpc.name
+  dest_range = "10.255.0.0/30"
 
   next_hop_instance      = google_compute_instance.wg_gateway.name
   next_hop_instance_zone = google_compute_instance.wg_gateway.zone

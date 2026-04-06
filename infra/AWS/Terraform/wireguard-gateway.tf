@@ -24,7 +24,9 @@ resource "aws_security_group" "wg_gateway_sg" {
     from_port   = -1
     to_port     = -1
     protocol    = "icmp"
-    cidr_blocks = ["10.20.0.0/16"]
+    cidr_blocks = [
+      "10.20.0.0/16"
+    ]
   }
 
   egress {
@@ -75,7 +77,22 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_route" "to_gcp" {
-  froute_table_id         = module.vpc.private_route_table_ids[0]
+  count                  = length(module.vpc.private_route_table_ids)
+  route_table_id         = module.vpc.private_route_table_ids[count.index]
   destination_cidr_block = "10.20.0.0/16"
+  network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
+}
+
+resource "aws_route" "to_gcp_wg_net" {
+  count                  = length(module.vpc.private_route_table_ids)
+  route_table_id         = module.vpc.private_route_table_ids[count.index]
+  destination_cidr_block = "10.255.0.0/30"
+  network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
+}
+
+resource "aws_route" "to_gcp_pods" {
+  count                  = length(module.vpc.private_route_table_ids)
+  route_table_id         = module.vpc.private_route_table_ids[count.index]
+  destination_cidr_block = "10.56.0.0/14"
   network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
 }
