@@ -18,7 +18,9 @@ resource "google_container_cluster" "gke" {
 
   networking_mode = "VPC_NATIVE"
 
-  ip_allocation_policy {}
+  ip_allocation_policy {
+    cluster_secondary_range_name = "gke-pods-range"
+  }
 }
 
 resource "google_container_node_pool" "default" {
