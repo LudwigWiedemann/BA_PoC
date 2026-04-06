@@ -15,7 +15,3 @@ variable "gcp_pods_secondary_range" {
   default     = "10.172.0.0/14"
 }
 
-variable "gcp_wg_public_ip" {
-  description = "Public IP of the GCP WireGuard gateway"
-  type        = string
-}
