@@ -59,7 +59,7 @@ resource "aws_security_group_rule" "allow_cockroach_nodeport_from_wg" {
   cidr_blocks = [
     "10.20.0.0/16",
     "10.255.0.0/30",
-    "10.172.0.0/14"
+    var.gcp_pods_secondary_range
   ]
 
   description = "Allow CockroachDB NodePort from GCP/WireGuard"

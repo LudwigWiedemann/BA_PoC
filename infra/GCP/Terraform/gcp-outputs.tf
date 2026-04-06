@@ -20,3 +20,11 @@ output "wg_gateway_public_ip" {
 output "wg_gateway_private_ip" {
   value = google_compute_instance.wg_gateway.network_interface[0].network_ip
 }
+
+output "gke_pods_secondary_range" {
+  value = [
+    for r in google_compute_subnetwork.subnet.secondary_ip_range :
+    r.ip_cidr_range
+    if r.range_name == "gke-pods-range"
+  ][0]
+}

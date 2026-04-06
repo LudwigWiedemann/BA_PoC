@@ -114,7 +114,7 @@ resource "google_compute_firewall" "wg_forwarded_sql" {
     "10.0.0.0/16",
     "10.255.0.0/30",
     "10.20.0.0/16",
-    "10.172.0.0/14"
+    var.gcp_pods_secondary_range
   ]
 
   target_tags = ["wireguard-gateway"]

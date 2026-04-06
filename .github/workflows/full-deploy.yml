@@ -30,6 +30,9 @@ jobs:
     outputs:
       cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
       gcs_bucket: ${{ steps.tf-outputs.outputs.gcs_bucket }}
+      gcp_pods_secondary_range: ${{ steps.tf-outputs.outputs.gcp_pods_secondary_range }}
+      wg_public_ip: ${{ steps.tf-outputs.outputs.wg_public_ip }}
+      wg_private_ip: ${{ steps.tf-outputs.outputs.wg_private_ip }}
     steps:
       - uses: actions/checkout@v4
 
@@ -60,10 +63,21 @@ jobs:
         run: |
           CLUSTER_NAME="$(terraform output -raw gke_cluster_name | tr -d '\r\n')"
           GCS_BUCKET="$(terraform output -raw gcp_frontend_bucket_name | tr -d '\r\n')"
+          GCP_PODS_SECONDARY_RANGE="$(terraform output -raw gke_pods_secondary_range | tr -d '\r\n')"
+          WG_PUBLIC_IP="$(terraform output -raw wg_gateway_public_ip | tr -d '\r\n')"
+          WG_PRIVATE_IP="$(terraform output -raw wg_gateway_private_ip | tr -d '\r\n')"
+          
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
           echo "gcs_bucket=$GCS_BUCKET" >> "$GITHUB_OUTPUT"
+          echo "gcp_pods_secondary_range=$GCP_PODS_SECONDARY_RANGE" >> "$GITHUB_OUTPUT"
+          echo "wg_public_ip=$WG_PUBLIC_IP" >> "$GITHUB_OUTPUT"
+          echo "wg_private_ip=$WG_PRIVATE_IP" >> "$GITHUB_OUTPUT"
+          
           echo "Resolved cluster_name='$CLUSTER_NAME'"
           echo "Resolved gcs_bucket='$GCS_BUCKET'"
+          echo "Resolved gcp_pods_secondary_range='$GCP_PODS_SECONDARY_RANGE'"
+          echo "Resolved wg_public_ip='$WG_PUBLIC_IP'"
+          echo "Resolved wg_private_ip='$WG_PRIVATE_IP'"
   # ─────────────────────────────────────────
   # TERRAFORM AWS
   # ─────────────────────────────────────────
@@ -76,6 +90,8 @@ jobs:
     outputs:
       cluster_name: ${{ steps.tf-outputs.outputs.cluster_name }}
       s3_bucket: ${{ steps.tf-outputs.outputs.s3_bucket }}
+      wg_public_ip: ${{ steps.tf-outputs.outputs.wg_public_ip }}
+      wg_private_ip: ${{ steps.tf-outputs.outputs.wg_private_ip }}
     steps:
       - uses: actions/checkout@v4
 
@@ -104,18 +120,140 @@ jobs:
         run: |
           CLUSTER_NAME="$(terraform output -raw eks_cluster_name | tr -d '\r\n')"
           S3_BUCKET="$(terraform output -raw aws_frontend_bucket_name | tr -d '\r\n')"
+          WG_PUBLIC_IP="$(terraform output -raw wg_gateway_public_ip | tr -d '\r\n')"
+          WG_PRIVATE_IP="$(terraform output -raw wg_gateway_private_ip | tr -d '\r\n')"
 
           echo "cluster_name=$CLUSTER_NAME" >> "$GITHUB_OUTPUT"
           echo "s3_bucket=$S3_BUCKET" >> "$GITHUB_OUTPUT"
+          echo "wg_public_ip=$WG_PUBLIC_IP" >> "$GITHUB_OUTPUT"
+          echo "wg_private_ip=$WG_PRIVATE_IP" >> "$GITHUB_OUTPUT"
 
           echo "Resolved cluster_name='$CLUSTER_NAME'"
           echo "Resolved s3_bucket='$S3_BUCKET'"
+          echo "Resolved wg_public_ip='$WG_PUBLIC_IP'"
+          echo "Resolved wg_private_ip='$WG_PRIVATE_IP'"
+
+
+  configure-wireguard-gateways:
+    name: Configure WireGuard Gateways
+    runs-on: ubuntu-latest
+    needs:
+      - terraform-gcp
+      - terraform-aws
+    if: >
+      needs.terraform-gcp.result == 'success' &&
+      needs.terraform-aws.result == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GCP Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Prepare AWS SSH key
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ vars.AWS_WG_SSH_PRIVATE_KEY }}" > ~/.ssh/aws_wg_key
+          chmod 600 ~/.ssh/aws_wg_key
+
+      - name: Configure AWS WireGuard gateway
+        shell: bash
+        env:
+          AWS_WG_PUBLIC_IP: ${{ needs.terraform-aws.outputs.wg_public_ip }}
+          GCP_WG_PUBLIC_IP: ${{ needs.terraform-gcp.outputs.wg_public_ip }}
+          GCP_PODS_SECONDARY_RANGE: ${{ needs.terraform-gcp.outputs.gcp_pods_secondary_range }}
+          AWS_WG_PRIVATE_KEY: ${{ vars.AWS_WG_PRIVATE_KEY }}
+          GCP_WG_PUBLIC_KEY: ${{ vars.GCP_WG_PUBLIC_KEY }}
+        run: |
+          cat > aws-wg-setup.sh <<EOF
+          sudo apt-get update
+          sudo apt-get install -y wireguard
+
+          sudo tee /etc/wireguard/wg0.conf > /dev/null <<WGCONF
+          [Interface]
+          Address = 10.255.0.1/30
+          ListenPort = 51820
+          PrivateKey = ${AWS_WG_PRIVATE_KEY}
+          PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT
+          PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT
+
+          [Peer]
+          PublicKey = ${GCP_WG_PUBLIC_KEY}
+          AllowedIPs = 10.255.0.2/32, 10.20.0.0/16, ${GCP_PODS_SECONDARY_RANGE}
+          Endpoint = ${GCP_WG_PUBLIC_IP}:51820
+          PersistentKeepalive = 25
+          WGCONF
+
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-wireguard.conf > /dev/null
+          sudo sysctl --system
+          sudo systemctl enable wg-quick@wg0
+          sudo systemctl restart wg-quick@wg0
+          sudo wg show
+          EOF
+
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/aws_wg_key ubuntu@"$AWS_WG_PUBLIC_IP" 'bash -s' < aws-wg-setup.sh
+
+      - name: Configure GCP WireGuard gateway
+        shell: bash
+        env:
+          AWS_WG_PUBLIC_IP: ${{ needs.terraform-aws.outputs.wg_public_ip }}
+          GCP_WG_PRIVATE_KEY: ${{ vars.GCP_WG_PRIVATE_KEY }}
+          AWS_WG_PUBLIC_KEY: ${{ vars.AWS_WG_PUBLIC_KEY }}
+          GCP_ZONE: ${{ vars.GCP_REGION }}-c
+        run: |
+          cat > gcp-wg-setup.sh <<EOF
+          sudo apt-get update
+          sudo apt-get install -y wireguard
+
+          sudo tee /etc/wireguard/wg0.conf > /dev/null <<WGCONF
+          [Interface]
+          Address = 10.255.0.2/30
+          ListenPort = 51820
+          PrivateKey = ${GCP_WG_PRIVATE_KEY}
+          PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT
+          PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT
+
+          [Peer]
+          PublicKey = ${AWS_WG_PUBLIC_KEY}
+          AllowedIPs = 10.255.0.1/32, 10.0.0.0/16
+          Endpoint = ${AWS_WG_PUBLIC_IP}:51820
+          PersistentKeepalive = 25
+          WGCONF
+
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-wireguard.conf > /dev/null
+          sudo sysctl --system
+          sudo systemctl enable wg-quick@wg0
+          sudo systemctl restart wg-quick@wg0
+          sudo wg show
+          EOF
+
+          gcloud compute scp gcp-wg-setup.sh wireguard-gateway:/tmp/gcp-wg-setup.sh \
+            --zone="$GCP_ZONE" \
+            --ssh-flag="-o StrictHostKeyChecking=no"
+
+          gcloud compute ssh wireguard-gateway \
+            --zone="$GCP_ZONE" \
+            --ssh-flag="-o StrictHostKeyChecking=no" \
+            --command="bash /tmp/gcp-wg-setup.sh"
+
+  
   # ─────────────────────────────────────────
   # DEPLOY GCP (K8s + Frontend)
   # ─────────────────────────────────────────
   deploy-gcp:
     name: Deploy → GKE + GCS
-    needs: terraform-gcp
+    needs: 
+      - terraform-gcp
+      - configure-wireguard-gateways
     runs-on: ubuntu-latest
     if: >
       needs.terraform-gcp.result == 'success'
@@ -231,7 +369,9 @@ jobs:
   # ─────────────────────────────────────────
   deploy-aws:
     name: Deploy → EKS + S3
-    needs: terraform-aws
+    needs:
+      - terraform-aws
+      - configure-wireguard-gateways
     runs-on: ubuntu-latest
     if: >
       needs.terraform-aws.result == 'success'

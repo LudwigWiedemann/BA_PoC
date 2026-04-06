@@ -12,6 +12,6 @@ resource "google_compute_subnetwork" "subnet" {
 
   secondary_ip_range {
     range_name    = "gke-pods-range"
-    ip_cidr_range = "10.172.0.0/14"
+    ip_cidr_range = var.gcp_pods_secondary_range
   }
 }

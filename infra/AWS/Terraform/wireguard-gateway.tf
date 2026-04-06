@@ -109,6 +109,6 @@ resource "aws_route" "to_gcp_wg_net" {
 resource "aws_route" "to_gcp_pods" {
   count                  = length(module.vpc.private_route_table_ids)
   route_table_id         = module.vpc.private_route_table_ids[count.index]
-  destination_cidr_block = "10.172.0.0/14"
+  destination_cidr_block = var.gcp_pods_secondary_range
   network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
 }

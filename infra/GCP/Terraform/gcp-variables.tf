@@ -14,3 +14,9 @@ variable "gcp_service_account_email" {
   description = "Service Account used by GitHub Actions and GKE nodes"
   default = "github-deployer@azure-poc-483517.iam.gserviceaccount.com"
 }
+
+variable "gcp_pods_secondary_range" {
+  description = "Secondary pod CIDR range for GKE pods"
+  type        = string
+  default     = "10.172.0.0/14"
+}
