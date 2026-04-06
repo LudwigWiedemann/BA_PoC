@@ -41,8 +41,26 @@ resource "aws_security_group_rule" "allow_cockroach_from_wg" {
   cidr_blocks       = [
     "10.0.0.0/16",
     "10.20.0.0/16",
-    "10.255.0.0/30"
+    "10.255.0.0/30",
+    "10.120.0.0/14"
   ]
 
-  description       = "Allow CockroachDB from WireGuard Gateway"
+  description       = "Allow CockroachDB from WireGuard Gateway this is potentially not needed"
+}
+
+resource "aws_security_group_rule" "allow_cockroach_nodeport_from_wg" {
+  type              = "ingress"
+  from_port         = 32057
+  to_port           = 32057
+  protocol          = "tcp"
+
+  security_group_id = module.eks.node_security_group_id
+
+  cidr_blocks = [
+    "10.20.0.0/16",
+    "10.255.0.0/30",
+    "10.172.0.0/14"
+  ]
+
+  description = "Allow CockroachDB NodePort from GCP/WireGuard"
 }

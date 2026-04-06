@@ -80,6 +80,7 @@ resource "google_compute_firewall" "allow_cockroach_from_aws_wg" {
   ]
 }
 
+
 resource "google_compute_route" "to_aws" {
   name       = "route-to-aws"
   network    = google_compute_network.vpc.name
@@ -98,4 +99,23 @@ resource "google_compute_route" "to_aws_wg_net" {
   next_hop_instance      = google_compute_instance.wg_gateway.name
   next_hop_instance_zone = google_compute_instance.wg_gateway.zone
   priority               = 1000
+}
+
+resource "google_compute_firewall" "wg_forwarded_sql" {
+  name    = "allow-forwarded-sql-to-wg-gateway"
+  network = google_compute_network.vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["32057"]
+  }
+
+  source_ranges = [
+    "10.0.0.0/16",
+    "10.255.0.0/30",
+    "10.20.0.0/16",
+    "10.172.0.0/14"
+  ]
+
+  target_tags = ["wireguard-gateway"]
 }

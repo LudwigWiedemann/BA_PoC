@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostnet-debug
+  namespace: idp
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  containers:
+    - name: debug
+      image: nicolaka/netshoot
+      command: ["sleep", "3600"]

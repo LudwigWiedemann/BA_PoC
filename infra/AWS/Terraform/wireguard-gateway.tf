@@ -29,6 +29,22 @@ resource "aws_security_group" "wg_gateway_sg" {
     ]
   }
 
+  ingress {
+    description = "Forwarded CockroachDB NodePort from GCP"
+    from_port   = 32057
+    to_port     = 32057
+    protocol    = "tcp"
+    cidr_blocks = ["10.20.0.0/16"]
+  }
+
+  ingress {
+    description = "Forwarded traffic from AWS VPC to GCP via WireGuard"
+    from_port   = 32057
+    to_port     = 32057
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+}
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -93,6 +109,6 @@ resource "aws_route" "to_gcp_wg_net" {
 resource "aws_route" "to_gcp_pods" {
   count                  = length(module.vpc.private_route_table_ids)
   route_table_id         = module.vpc.private_route_table_ids[count.index]
-  destination_cidr_block = "10.56.0.0/14"
+  destination_cidr_block = "10.172.0.0/14"
   network_interface_id   = aws_instance.wg_gateway.primary_network_interface_id
 }

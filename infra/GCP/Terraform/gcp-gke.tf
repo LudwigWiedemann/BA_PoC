@@ -38,3 +38,18 @@ resource "google_container_node_pool" "default" {
     ]
   }
 }
+
+resource "google_compute_firewall" "allow_cockroach_nodeport_from_aws_wg" {
+  name    = "allow-cockroach-nodeport-from-aws-wg"
+  network = google_compute_network.vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["32057"]
+  }
+
+  source_ranges = [
+    "10.0.0.0/16",
+    "10.255.0.0/30"
+  ]
+}
