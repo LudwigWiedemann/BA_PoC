@@ -238,7 +238,7 @@ jobs:
 
           gcloud compute scp gcp-wg-setup.sh wireguard-gateway:/tmp/gcp-wg-setup.sh \
             --zone="$GCP_ZONE" \
-            --ssh-flag="-o StrictHostKeyChecking=no"
+            --scp-flag="-o StrictHostKeyChecking=no"
 
           gcloud compute ssh wireguard-gateway \
             --zone="$GCP_ZONE" \
