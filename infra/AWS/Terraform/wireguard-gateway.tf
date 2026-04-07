@@ -43,7 +43,7 @@ resource "aws_security_group" "wg_gateway_sg" {
     to_port     = 32057
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
-}
+  } 
 
   egress {
     from_port   = 0

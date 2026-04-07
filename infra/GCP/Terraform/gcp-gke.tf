@@ -12,7 +12,7 @@ resource "google_container_cluster" "gke" {
 
   node_config {
     service_account = var.gcp_service_account_email
-    disk_size_gb = 20           # Default is 100GB; lowering this prevents the quota error
+    disk_size_gb = 20            # Default is 100GB; lowering this prevents the quota error
     disk_type    = "pd-standard" # Use HDD (standard) instead of SSD to use a different quota
   }
 

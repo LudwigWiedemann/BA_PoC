@@ -56,7 +56,7 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
-# Praktischer Output für Terraform
+# Output für Terraform
 output "frontend_bucket_name" {
   value = aws_s3_bucket.frontend.bucket
 }
