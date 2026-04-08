@@ -18,12 +18,12 @@ spec:
           image: BACKEND_IMAGE
           imagePullPolicy: Always
           ports:
-            - containerPort: 4000   # anpassen, falls deine App einen anderen Port nutzt
+            - containerPort: 4000 
           env:
             - name: DB_HOST
               value: cockroachdb.idp.svc.cluster.local
             - name: DB_NAME
-              value: "idp"   # <--- hier setzen!
+              value: "idp" 
             - name: DB_USER
               value: "root"
             - name: DB_PORT

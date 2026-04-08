@@ -20,6 +20,14 @@ resource "aws_security_group" "wg_gateway_sg" {
   }
 
   ingress {
+    description = "Forward CockroachDB NodePort from GCP"
+    from_port   = 32057
+    to_port     = 32057
+    protocol    = "tcp"
+    cidr_blocks = ["10.20.0.0/16"]
+  }
+
+  ingress {
     description = "ICMP from GCP"
     from_port   = -1
     to_port     = -1
@@ -27,14 +35,6 @@ resource "aws_security_group" "wg_gateway_sg" {
     cidr_blocks = [
       "10.20.0.0/16"
     ]
-  }
-
-  ingress {
-    description = "Forwarded CockroachDB NodePort from GCP"
-    from_port   = 32057
-    to_port     = 32057
-    protocol    = "tcp"
-    cidr_blocks = ["10.20.0.0/16"]
   }
 
   ingress {
