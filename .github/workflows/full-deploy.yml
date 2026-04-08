@@ -256,8 +256,8 @@ jobs:
       - name: Deploy K8s Manifests
         run: |
           sed -i "s|BACKEND_IMAGE|${{ env.IMAGE_URL }}|g" infra/K8s/deployment.yaml
-          kubectl apply -f infra/K8s/namespace.yaml
           sed -i "s|STORAGE_CLASS|gp2|g" infra/K8s/db.yaml
+          kubectl apply -f infra/K8s/namespace.yaml
           kubectl apply -f infra/K8s/db.yaml
           kubectl rollout status statefulset/cockroachdb -n idp --timeout=300s
           kubectl apply -f infra/K8s/deployment.yaml
